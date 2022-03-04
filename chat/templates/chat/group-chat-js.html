@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script>
+<script>
+    let current_group;
+
+    function setGroup(groupName,user_img_url, img_url,groupId=null,groupInfo=null, groupTitleName=null)
+    {
+        if($('#chat-panel-show-id').is(":hidden"))
+            $('#chat-panel-show-id').show();
+        $('#chatPanel-image').prop("src",user_img_url);
+
+        $('#receiver_img_preview_id').prop("src",img_url);
+        $('#sender_img_preview_id').prop("src",user_img_url);
+        $('#chatPanel-username').text(groupTitleName);
+
+        {# Modal Body#}
+        $('#receiver_group_image_url').prop("src", user_img_url);
+        $('#receiver_group_name').text(groupTitleName);
+        //('#receiver_group_description').text(description);
+
+        // Group ID for adding members to a group
+        $('#add-chat-member-group-id').val(groupId)
+
+        {# Off Canvas #}
+        $('#offcanvas_profile_img_url').prop("src", user_img_url);
+        $('#offcanvas_profile_fullname').text(groupTitleName);
+        $('#offcanvas_profile_username').text(groupInfo);
+        $('#update_group_id').val(groupId);
+        // $('#offcanvas-tab-profile-people').text('People');
+
+        $('#offcanvas_profile_designation').closest('.list-group-item').hide();
+        $('#offcanvas_profile_bio').closest('.list-group-item').hide();
+        $('#offcanvas-dropdown').show();
+        $('#offcanvas_group_members').show();
+
+        {# Showing Call and Chat #}
+        // $('#video_call_form').show()
+        // $('#audio_call_form').show()
+        selectedIsUser = false;
+        $('.open-notebook').show()
+
+        $('#chat-content-div').empty();
+        readGroupUnreadMsg(groupId);
+        $('#chat-group').val("Group");
+
+        getGroupConversation(groupName);
+        current_receiver = '';
+        receiver = '';
+        current_group = groupId;
+        $('#set_group_id_for_video').val(groupId);
+        $('#set_group_id_for_audio').val(groupId);
+        $('#receiver_for_msg_send').val();
+        $('#receiver_for_group_send').val(groupName);
+        $('#setReceiverModal').attr('data-bs-target', '#modal-group');
+        $('.open-notebook').attr('onclick', `redirectNotebook()`);
+        groupInitialize(groupId);
+
+        // For mobiles
+        document.querySelector('main.main').classList.add('is-visible')
+    }
+
+{############    Custom Api Calls    #########}
+
+    let returnData;
+    function groupInitialize(id)
+    {
+
+        let url = `/chat/group/member/list/${id}/`;
+        $.ajax({
+            url: url,
+            success: function(data){
+                data['group_id'] = id;
+                createGroupMember(data);
+            },
+        });
+        return returnData;
+    }
+    function createGroupMember(data){
+        let group_list_tag = $('#group-list');
+        group_list_tag.empty();
+        let html = '';
+        let current_user_email = "{{ request.user.email }}";
+        console.log(data)
+        let html2 = ''
+        $('#offcanvas_group_members').empty();
+        let isCurrentUserAdmin = false;
+        for (const [key, value] of Object.entries(data['member_list'])){
+            const boolEmail = value.split(',')[1] === current_user_email;
+            const boolAdmin = value.split(',')[2] === 'true';
+            if (boolEmail && boolAdmin){
+                isCurrentUserAdmin = true;
+                break;
+            }
+        }
+        // Only show add member option to admins
+        isCurrentUserAdmin ? $('#add-member-to-group').show():$('#add-member-to-group').hide()
+        $.each(data['member_list'], function(k,v){
+            let userId = k;
+            let groupId = data['group_id'];
+            let splitData = v.split(",");
+            let createdBy = data['created_by'].split(",")[1];
+            let name = splitData[0];
+            let email = splitData[1];
+            let admin = splitData[2];
+            let username = splitData[3]
+            // mem -> means the member we currently iterating over.
+            const isCreator = current_user_email === createdBy;
+            const memIsCurrentUser = current_user_email === email;
+            const memIsAdmin = admin === "true";
+            createOffcanvasGroupMembers({memIsAdmin, memIsCurrentUser, groupId, userId, name, email, username, isCreator, isCurrentUserAdmin})
+
+            if(isCreator) {
+                if (memIsAdmin) {
+                    html += `<li>${name} &nbsp;<strong>(Admin)</strong>&nbsp;<a onclick="deleteGroup(${groupId})" href='#'>Delete Group</a></li>`;
+                } else {
+                    let email_from = "{{ request.user.email }}";
+                    if(email === email_from)
+                        html += `<li>${name} &nbsp;<a onclick="leaveGroup(this, ${groupId}, ${userId})" href='#'>Leave Group</a></li>`;
+                    else
+                        html += `<li>${name} &nbsp;<a onclick="deleteMember(this,${groupId},${k})" href='#'>Remove</a></li>`;
+
+                }
+            }
+            else{
+                if (memIsAdmin) {
+                    html += `<li>${name} &nbsp;<strong>(Admin)</strong></li>`;
+                } else {
+                    let email_from = "{{ request.user.email }}";
+                    if(email === email_from)
+                        html += `<li>${name} &nbsp;<a onclick="leaveGroup(this, ${groupId}, ${userId})" href='#'>Leave Group</a></li>`;
+                    else
+                        html += `<li>${name} &nbsp;</li>`;
+                }
+            }
+        });
+        group_list_tag.append(html);
+        $('#offcanvas_group_members').append(html2);
+
+        function createOffcanvasGroupMembers(o) {
+            html2 += `
+            <div class="row align-items-center gx-5 p-3">
+                <div class="col">
+                    <h5><a href="#"></a>${o.name}</h5>
+                    <p>${o.username}</p>
+                </div>
+
+                <div class="col-auto">
+                    <span class="extra-small text-primary">${o.memIsAdmin?'Admin':''}</span>
+                </div>
+
+                <div class="col-auto" style="${!o.isCurrentUserAdmin && !o.memIsCurrentUser ? `display:none`: ''}">
+                    <div class="dropdown">
+                        <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                        </a>
+
+                        <ul class="dropdown-menu">
+
+                            ${o.isCurrentUserAdmin ?
+                                !o.memIsCurrentUser ? `
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteMember(this, ${o.groupId}, ${o.userId})" href="#">
+                                        Remove Member
+                                        <div class="icon ms-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </div>
+                                    </a>
+                                </li>
+                                ` : `
+                                <li onclick="deleteGroup(${o.groupId})">
+                                    <a class="dropdown-item d-flex align-items-center text-danger" href="#">
+                                        Group Delete
+                                        <div class="icon ms-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </div>
+                                    </a>
+                                </li>
+                                `
+
+                            : o.memIsCurrentUser ?`
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="leaveGroup(this, ${o.groupId}, ${o.userId})" href="#">
+                                        Leave Group
+                                        <div class="icon ms-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </div>
+                                    </a>
+                                </li>
+                                ` : ''
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            `
+        }
+    }
+
+
+
+    function removeFromGroup(id)
+    {
+
+    }
+
+    function refreshGroupMessage()
+    {
+        let groupName = $('#receiver_for_group_send').val();
+        console.log(groupName);
+        getGroupConversation(groupName);
+    }
+
+    function deleteSelectedGroupChat()
+    {
+        console.log("From group");
+        $("input:checkbox[name=input_group_chat]:checked").each(function(){
+            console.log($(this).val());
+            let id = $(this).val();
+            let chat_line = $(`#group_chat_line_${id}`);
+            chat_line.remove();
+            $.getJSON(`/chat/api/group/combine/delete/${id}/`, function (data) {
+            });
+        });
+    }
+
+    function clearGroupChat()
+    {
+
+        $('#chat-content-div').empty();
+        $.getJSON(`/chat/api/group/clear/all/chat/${current_group}/`, function (data) {
+        });
+        console.log("Group delete");
+    }
+
+    {#function deleteGroupSenderMessage(id)#}
+    {#{#}
+    {#    console.log("Deleted msg");#}
+    {#    let msgText = $(`#group_chat_line_${id} div .message-text p`)[0];#}
+    {#    console.log(msgText);#}
+    {#    msgText.textContent = "This message was deleted";#}
+    {#    $.getJSON(`/chat/api/group/sender/msg/delete/${id}/`, function (data) {#}
+    {#    });#}
+    {##}
+    {#    groupName = $('#receiver_for_group_send').val();#}
+    {#    chatsockets = 'group_chatSocket_chat_' + groupName;#}
+    {#    socket = group_websocket_dict[chatsockets];#}
+    {##}
+    {#    console.log(socket);#}
+    {#    if(socket) {#}
+    {#        console.log("Data deletion query send from query");#}
+    {#        socket.send(JSON.stringify({#}
+    {#            'receiver_id': groupName,#}
+    {#            'command': 'notification',#}
+    {#            'msg_id': id,#}
+    {##}
+    {#        }));#}
+    {#    }#}
+    {#}#}
+
+    function deleteGroupSenderMsgforSelf(id)
+    {
+        let msgText = $(`#group_chat_line_${id}`)[0];
+        msgText.remove();
+        $.getJSON(`/chat/api/group/sender/msg/delete/self/${id}/`, function (data) {
+        });
+    }
+
+    function deleteGroupReceiverMessage(id)
+    {
+        let msgText = $(`#group_chat_line_${id}`)[0];
+        msgText.remove();
+        $.getJSON(`/chat/api/group/receiver/msg/delete/${id}/`, function (data) {
+        });
+
+    }
+
+
+    function getGroupConversation(groupName) {
+        $.getJSON(`/chat/api/chat/group/msg/?target=${groupName}`, function (data) {
+            $('#chat-content-div').empty();
+
+            for (let i = data['results'].length - 1; i >= 0; i--) {
+                drawMessage(data['results'][i]);
+            }
+        });
+    }
+    function drawMessage(data) {
+        let html = '';
+        x = data['receiver_delete'];
+        let is_receiver_delete = '';
+        $.each(x, function(k,v){
+            if(currentUser === v['email'])
+                is_receiver_delete = true;
+        });
+        const mediaEl= generateMediaEl(data, currentUser === data['user'])
+            if (currentUser === data['user']) {
+                if(!data['is_delete']) {
+                    html = '';
+                    let base_url = window.location.origin;
+                    let profile_image = base_url + data['user_profile_url'];
+                    html += `
+                                                    <div class="message message-out" id="group_chat_line_${data['id']}">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" style="object-fit:cover;" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="input_group_chat" value="${data['id']}" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                    ${data['body'] ?
+                                                            `
+                                                            <div class="message-text">
+                                                                <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                            </div>
+                                                            ` :
+                                                            `
+                                                            ${data['is_media_present']? mediaEl: ''}
+                                                            `
+                                                        }
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+
+                                                            <ul class="dropdown-menu">
+
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupSenderMsgforSelf(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+
+                                                                {#<li>#}
+                                                                {#    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupSenderMessage(${data['id']})" href="#">#}
+                                                                {#        <span class="me-auto">Delete for Everyone</span>#}
+                                                                {#        <div class="icon">#}
+                                                                {#            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>#}
+                                                                {#        </div>#}
+                                                                {#    </a>#}
+                                                                {#</li>#}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                `
+                    {#html += `<li class="text-info">${data['user']}: ${data['body']}</li><br>`;#}
+                }
+            }
+            else {
+                if (!is_receiver_delete) {
+                    html = ''
+                    let base_url = window.location.origin;
+                    let profile_image = base_url + data['user_profile_url'];
+                    html += `
+                     <div class="message" id="group_chat_line_${data['id']}">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-user-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" style="object-fit:cover;" src="${profile_image}" alt="">
+                                        </a>
+
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="input_group_chat" value="${data['id']}" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+
+                                                    ${data['body'] ?
+                                                            `
+                                                            <div class="message-text">
+                                                                <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                            </div>
+                                                            ` :
+                                                            `
+                                                            ${data['is_media_present']? mediaEl: ''}
+                                                            `
+                                                        }
+
+
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+
+                                                            <ul class="dropdown-menu">
+
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupReceiverMessage(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                `
+                    {#html += `<span class="text-success" style="margin-left: 300px;">${data['user']}: ${data['body']}</span><br>`;#}
+                }
+            }
+            $('#chat-content-div').append(html);
+            scrollChatToEnd($('#chat-content-div'))
+    }
+
+    function getGroupUnreadMsgList(id){
+        let my_data = null;
+        $.ajax(
+        {
+            url: `/chat/api/unread/group/msg/${id}/`,
+            dataType: "json",
+            async: false,
+            success: function(data)
+            {
+                my_data = data;
+
+            }
+        });
+        return my_data;
+    }
+
+    function showGroupNotification(receiver){
+        msgList = getGroupUnreadMsgList(receiver)
+        if(msgList) {
+            last_msg = msgList.slice()[0];
+            if (last_msg) {
+                let html = `<div class="line-clamp me-auto" style="-webkit-line-clamp:1; overflow-wrap:anywhere;">
+                     ${last_msg['body']}
+                </div>
+                <div class="badge badge-circle bg-primary ms-5">
+                <span>${msgList.length}</span>
+               </div>`;
+                let div_string = `group_notification_${receiver}`;
+                let divTag = $('#' + div_string);
+                divTag.empty();
+                divTag.append(html);
+            }
+        }
+    }
+
+    function readGroupUnreadMsg(receiver) {
+        let div_string = `group_notification_${receiver}`;
+        let divTag = $('#'+div_string);
+        divTag.empty();
+        $.getJSON(`/chat/api/group/msg/read/${receiver}/`, function (data) {
+        });
+    }
+{############   End Custom Api Calls    #########}
+
+
+
+</script>
+
+{################     Script For new msg notification    ###################}
+<script>
+    function getGroupMessageById(data) {
+
+        id = JSON.parse(data).id
+        $.getJSON(`/chat/api/chat/group/msg/${id}/`, function (data) {
+            let html = '';
+            const mediaEl= generateMediaEl(data, currentUser === data['user'])
+            if (currentUser === data['user']) {
+                html = '';
+                let base_url = window.location.origin;
+                let profile_image = base_url + data['user_profile_url'];
+                html += `
+                                                    <div class="message message-out" id="group_chat_line_${data['id']}">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" style="object-fit:cover;" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="input_group_chat" value="${data['id']}" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                    ${data['body'] ?
+                                                            `
+                                                            <div class="message-text">
+                                                                <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                            </div>
+                                                            ` :
+                                                            `
+                                                            ${data['is_media_present']? mediaEl: ''}
+                                                            `
+                                                        }
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+
+                                                            <ul class="dropdown-menu">
+
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupSenderMsgforSelf(${data['id']})"  href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                                {#<li>#}
+                                                                {#    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupSenderMessage(${data['id']})" href="#">#}
+                                                                {#        <span class="me-auto">Delete for Everyone</span>#}
+                                                                {#        <div class="icon">#}
+                                                                {#            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>#}
+                                                                {#        </div>#}
+                                                                {#    </a>#}
+                                                                {#</li>#}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                `
+            }
+            else {
+                html = ''
+                let base_url = window.location.origin;
+                let profile_image = base_url + data['user_profile_url'];
+                html += `
+                     <div class="message" id="group_chat_line_${data['id']}">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-user-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" style="object-fit:cover;" src="${profile_image}" alt="">
+                                        </a>
+
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="input_group_chat" value="${data['id']}" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+
+                                                    ${data['body'] ?
+                                                        `
+                                                        <div class="message-text">
+                                                            <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                        </div>
+                                                        ` :
+                                                        `
+                                                        ${data['is_media_present']? mediaEl: ''}
+                                                        `
+                                                    }
+
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+
+                                                            <ul class="dropdown-menu">
+
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteGroupReceiverMessage(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                `
+                {#html += `<span class="text-success" style="margin-left: 300px;">${data['user']}: ${data['body']}</span><br>`;#}
+            }
+            $('#chat-content-div').append(html);
+            scrollChatToEnd($('#chat-content-div'))
+        });
+
+
+    }
+
+
+    let group_websocket_dict = {};
+    {% for group in request.user.groups.all %}
+
+let group_chatSocket_chat_{{ group.id }};
+let receiver_group_{{group.id }} = "{{group.id }}";
+wsStart = 'ws://';
+loc = window.location;
+if(loc.protocol === 'https:'){
+wsStart = 'wss://';
+}
+group_chatSocket_chat_{{ group.id }} = new ReconnectingWebSocket(
+    wsStart + window.location.host +
+    '/ws/chat/group/' + "{{ group.name }}" + '/'+ "{{ request.user.id }}" +'/');
+
+        group_websocket_dict["group_chatSocket_chat_{{ group.name }}"] = group_chatSocket_chat_{{ group.id }};
+
+        group_chatSocket_chat_{{ group.id }}.onmessage = function (e)
+        {
+            console.log("Group data");
+            data = JSON.parse(e['data']);
+            console.log(data);
+            if (String(current_group) === String(data.group_id)) {
+                    getGroupMessageById(e['data']);
+                }
+
+                else{
+                    showGroupNotification(data.group_id);
+                }
+
+                refreshPanelPosition();
+
+        }
+    {% endfor %}
+
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            var messageInputDom = document.querySelector('#chat-message-input');
+            var message = messageInputDom.value;
+            let value = message.replace(/\n/g, "");
+            if(value.length >0) {
+                if (e.keyCode === 13) {  // enter, return
+                    document.querySelector('#chat-message-submit').click();
+                }
+            }
+            messageInputDom.value = '';
+
+        };
+
+</script>
+{################     End of Script For new msg notification    ###################}
+
+
+{################     Script For new msg notification on document ready event   ###################}
+<script>
+    $(document).ready(function(){
+        {% for group in request.user.groups.all %}
+
+            showGroupNotification("{{ group.id }}");
+        {% endfor %}
+        {% for item in chat_list_user %}
+
+            showNotification("{{ item.id }}");
+        {% endfor %}
+        refreshPanelPosition();
+
+
+    });
+
+</script>
+{################     End of Script For new msg notification on document ready event   ###################}
+
+
+{###########################    Script For rearranging chat panel according to new msg arrived    ##################}
+<script>
+
+    let id_msgCount_dict = {};
+    let orderPanel = [];
+    function refreshPanelPosition() {
+        let user_link = $('#contact-list-left-panel a');
+
+        $.each(user_link, function (k, v) {
+            let panel_id = user_link[k].id;
+
+            let span_tags = $(user_link[k]).find("span");
+            if (span_tags.length > 1) {
+                let counter = span_tags[1].innerHTML;
+                id_msgCount_dict[panel_id] = parseInt(counter);
+            } else {
+                id_msgCount_dict[panel_id] = Number.NEGATIVE_INFINITY;
+            }
+        });
+        var items = Object.keys(id_msgCount_dict).map(function (key) {
+            return [key, id_msgCount_dict[key]];
+        });
+        items.sort(function (first, second) {
+            return second[1] - first[1];
+        });
+        orderPanel = [];
+        $.each(items, function(k,v) {
+            orderPanel.push(v[0]);
+        });
+    }
+</script>
+{###########################    End of Script For rearranging chat panel according to new msg arrived   ##################}
+
+
+</body>

@@ -1,0 +1,169 @@
+{% load static %}
+                    <div class="tab-pane fade h-100 show active" id="tab-content-chats" role="tabpanel">
+                        <div class="d-flex flex-column h-100 position-relative">
+                            <div class="hide-scrollbar">
+
+                                <div class="container py-8">
+                                    <!-- Title -->
+                                    <div class="mb-8">
+                                        <h2 class="fw-bold m-0">Chats</h2>
+                                    </div>
+
+                                    <!-- Search -->
+                                    <div class="mb-6">
+                                        <form method="" onsubmit="event.preventDefault()">
+                                            <div class="input-group">
+                                                <div class="input-group-text">
+                                                    <div class="icon icon-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                                    </div>
+                                                </div>
+
+                                                <input  id="search-input-chats" 
+                                                        oninput="startSearchQuery(event, this.value, 'contact-list-left-panel', 'receiver_', 'group_receiver_')" 
+                                                        type="text" class="form-control form-control-lg ps-0" placeholder="Search users" aria-label="Search users">
+                                                <script>
+                                                    let queryTimer;
+                                                    function startSearchQuery(event, query, searchWrapperId, serachUserItemId, serachGroupItemId=null) {
+                                                        clearTimeout(queryTimer);
+                                                        queryTimer = setTimeout(() => {
+                                                            searchUsersAndGroups(event, query.toLowerCase(), searchWrapperId, serachUserItemId, serachGroupItemId);
+                                                        }, 1000);
+                                                    }
+                                                </script>
+                                            </div>
+                                        </form>
+
+                                    </div>
+
+
+<!--                                    {% if request.user.is_authenticated %}-->
+<!--                                    <div class="mb-5">-->
+<!--                                        <a onclick="$('#tab-create-chat').click();" data-bs-toggle="tab" role="tab" class="btn btn-sm btn-primary w-100 py-4" >Create CodeRsoom</a>-->
+<!--                                    </div>-->
+<!--                                    {% endif %}-->
+
+
+                                    {% if request.user.is_plan_valid and allow_group_creation %}
+                                    <div class="mb-5">
+                                        <a  onclick="$('#tab-content-create-chat').addClass('active show');" class="btn btn-sm btn-primary w-100 py-4" >Create CodeRoom</a>
+                                    </div>
+                                    {% endif %}
+
+
+                                    <!-- Chats -->
+                                    <div class="card-list" id="contact-list-left-panel">
+
+                                        {% for object in contact_list %}
+
+                                        <a style="cursor:pointer;" id="receiver_{{ object.id }}" 
+                                        onclick="setReceiver(
+                                            `{{ object.username }}`,
+                                            `{{ object.email }}`,
+                                            `{{ object.id }}`,
+                                            `{{ object.get_profile_img|default_if_none:''|escapejs }}`,
+                                            `{{ request.user.get_profile_img|default_if_none:''|escapejs }}`,
+                                            `{{ object.get_full_name }}`,
+                                            `{{ object.phone_number }}`,
+                                            `{% url 'user:friend-profile' object.id %}`,
+                                            `{{object.designation|default_if_none:''|escapejs}}`,
+                                            `{{object.bio|default_if_none:''|escapejs}}`)"
+                                            class="card border-0 text-reset">
+                                            <div class="card-body">
+                                                <div class="row gx-5">
+                                                    <div class="col-auto">
+                                                        <div class="avatar">
+                                                            <img src="{{ object.get_profile_img }}" alt="#" style="object-fit: cover;" class="avatar-img">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col">
+                                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                                            <div class="">
+                                                                <h5 data-search='full_name' class="me-auto mb-0">{{ object.get_full_name }}</h5>
+                                                                <h6 data-search='username' class="text-muted me-auto mb-0">{{ object.username }}</h6>
+                                                            </div>
+<!--                                                            <span class="text-muted extra-small ms-2 align-self-start">08:35 PM</span>-->
+                                                        </div>
+
+                                                        <div class="d-flex align-items-center" id="chat_notification_{{ object.id }}">
+
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div><!-- .card-body -->
+                                        </a>
+                                        {% endfor %}
+                                        {% for object in group_list %}
+                                        <a style="cursor:pointer;background: rgba(49, 133, 252, 0.14);" id="group_receiver_{{ object.id }}"
+                                        onclick="setGroup(
+                                            `{{ object.name }}`,
+                                            `{{ object.profile_image.url|default_if_none:''|escapejs }}`,
+                                            `{{ request.user.get_profile_img|default_if_none:''|escapejs }}`,
+                                            `{{ object.id }}`,
+                                            `{{ object.group_info }}`,`{{ object.group_name }}`)"
+                                            class="card border-0 text-reset">
+                                            <div class="card-body">
+                                                <div class="row gx-5">
+                                                    <div class="col-auto">
+                                                        <!-- <div class="avatar-group">
+                                                            <a href="#" class="avatar">
+                                                                <img src="{{ request.user.get_profile_img }}" alt="#"  style="object-fit: cover;" class="avatar-img">
+                                                            </a>
+                                                            <a href="#" class="avatar">
+                                                                <img {% if object.profile_image %}src="{{ object.profile_image.url }}"{% endif %}  alt="#"  style="object-fit: cover;" class="avatar-img">
+                                                            </a>
+                                                        </div> -->
+                                                        <div class="avatar">
+<!--                                                            <img src="{{ request.user.profile_image.url }}" alt="#"  style="object-fit: cover;" class="avatar-img">-->
+<!--                                                            <img {% if object.profile_image %}src="{{ object.profile_image.url }}"{% endif %}  alt="#"  style="object-fit: cover; margin-left: -2rem;" class="avatar-img">-->
+                                                            <img src="{{ object.profile_image.url }}" alt="#" style="object-fit: cover;" class="avatar-img">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col">
+                                                        <div class="d-flex align-items-center mb-3">
+                                                            <div>
+                                                            <h5 data-search='groupname' class="me-auto mb-0">{{ object.group_name }}</h5>
+                                                            <h6 data-search='username' class="me-auto mb-0" style="color: #68748D;font-size: 13px;"></h6>
+<!--                                                            <span class="text-muted extra-small ms-2">08:35 PM</span>-->
+                                                            </div>
+                                                        </div>
+
+{#                                                        <div class="d-flex align-items-center">#}
+{#                                                            <div class="line-clamp me-auto">#}
+{#                                                                is typing<span class='typing-dots'><span>.</span><span>.</span><span>.</span></span>#}
+{#                                                            </div>#}
+{#                                                        </div>#}
+                                                        <div class="d-flex align-items-center" id="group_notification_{{ object.id }}">
+{#                                                            <div class="line-clamp me-auto">#}
+{#                                                                Hello! Yeah, I'm going to meet friend of mine at the departments stores now.#}
+{#                                                            </div>#}
+{##}
+{#                                                            <div class="badge badge-circle bg-primary ms-5">#}
+{#                                                                <span>3</span>#}
+{#                                                            </div>#}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div><!-- .card-body -->
+                                        </a>
+                                        {% endfor %}
+                                        
+                                        {% if not group_list.exists and not contact_list.exists %}
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <img src="{% static 'chat/img/find_connections.svg' %}" class="w-100" style="margin-top: 5rem; max-width: 320px;" alt="">
+                                            </div>
+                                            <div class="d-flex flex-column mx-auto align-items-center">
+                                                <h5 style="margin-top: 3rem;">Currently you have no connections!</h5>
+                                                <button onclick="$('#tab-friends')[0].click()" class="mt-5 w-50 btn btn-primary">Find Connections</button>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <!-- Chats -->
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>

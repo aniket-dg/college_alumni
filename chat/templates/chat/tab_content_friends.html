@@ -1,0 +1,117 @@
+{% load static %}
+                    <div class="tab-pane fade h-100" id="tab-content-friends" role="tabpanel">
+                        <div class="d-flex flex-column h-100">
+                            <div class="hide-scrollbar">
+                                <div class="container py-8">
+
+                                    <!-- Title -->
+                                    <div class="mb-8">
+                                        <h2 class="fw-bold m-0">Friends</h2>
+                                    </div>
+
+                                    <!-- Search -->
+                                    <div class="mb-6">
+                                        <form action="" onsubmit="event.preventDefault()">
+                                            <div class="input-group">
+                                                <div class="input-group-text">
+                                                    <div class="icon icon-lg">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                                    </div>
+                                                </div>
+
+                                                <input id="search-input-friends" 
+                                                oninput="startSearchQuery(event, this.value, 'user-list-left-panel', 'remaining_', null)" 
+                                                type="text" class="form-control form-control-lg ps-0" placeholder="Search users" aria-label="Search users">
+                                            </div>
+                                        </form>
+
+                                        <!-- Invite button -->
+                                        <!-- <div class="mt-5">
+                                            <a href="#" class="btn btn-lg btn-primary w-100 d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modal-invite">
+                                                Find Friends
+
+                                                <span class="icon ms-auto">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-plus"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                                </span>
+                                            </a>
+                                        </div> -->
+                                    </div>
+
+                                    <!-- List -->
+                                    <div class="card-list">
+                                        {% if request.user.get_user_received_users.exists %}
+                                        <div class="row align-items-center gx-6 mb-3">
+                                            <div class="col">
+                                                <h4>Friend Requests</h4>
+                                            </div>
+                
+                                            <div class="col-auto" onclick="$('#friend_requests_list').toggleClass('d-none');">
+                                                <div class="btn btn-sm btn-icon btn-dark" style="position: relative;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-circle"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                                    <span class="badge-sm badge-circle bg-primary p-1" style="position: absolute; top: 0; right: 0;">
+                                                    </span>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <div id="friend_requests_list">
+                                        {% for connection in request.user.get_user_received_users %}
+                                            <!-- Card -->
+                                            <div class="card border-0">
+                                                <div class="card-body">
+                                                    <div class="row align-items-center gx-5">
+                                                        <div class="col-auto">
+                                                            <a href="#" class="avatar ">
+                                                                <img class="avatar-img" style="object-fit: cover;" src="{{ connection.connection_user.get_profile_img }}" alt="">
+                                                            </a>
+                                                        </div>
+
+                                                        <div class="col">
+                                                            <h5><a href="#">{{ connection.connection_user.get_full_name }}</a></h5>
+                                                            <p>{{ connection.connection_user.username }}</p>
+                                                        </div>
+
+                                                        <div class="col-auto">
+                                                            <!-- Dropdown -->
+                                                            <div class="dropdown">
+                                                                <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                                </a>
+
+                                                                <ul class="dropdown-menu">
+                                                                    <li onclick="this.querySelector(`button[type='submit']`).click()">
+                                                                        <a class="dropdown-item" href="#">Accept Request</a>
+                                                                        <form method="post" onsubmit="acceptFriendRequest(event, reload=true);" action="">
+                                                                            <input type="hidden" name="id" value="{{ connection.connection_user.id }}">
+                                                                            {% csrf_token %}
+                                                                            <button class="d-none" type="submit"></button>
+                                                                        </form>
+                                                                    </li>
+                                                                    {% comment %} <li><a class="dropdown-item" href="#">Edit contact</a> {% endcomment %}
+                                                                    </li>
+
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        </div>
+                                       
+                                        <h4 class="mt-5 mb-4">Find Users</h4>
+                                        <div id="user-list-left-panel">
+                                            <!-- Remaining users and their initials are loaded dynamically here -->
+                                        </div>
+                                        <div class="justify-content-center mt-5" style="display: flex;" id="loadRegion">
+                                            <button class="btn btn-soft-primary" id="loadmore-users-btn" onclick="loadMoreRemainingUsers()">Load More</button>
+                                            <button class="btn btn-soft-tertiary" id="nomore-users" style="display: none">No more users!</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

@@ -1,0 +1,329 @@
+{% load static %}
+
+<!-- Create -->
+                <div class="tab-pane fade h-100" id="tab-content-create-chat" role="tabpanel">
+
+                    <div class="d-flex flex-column h-100">
+                        <div class="hide-scrollbar">
+                            <div class="container py-8">
+                                {########################  Group Chat Form   ##################################}
+                                <form method="post" action="{% url 'chat:group-create' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+
+
+                                    <!-- Title -->
+                                    <div class="mb-8">
+                                        <h2 class="fw-bold m-0">Create chat</h2>
+                                    </div>
+
+                                    <!-- Search -->
+                                    <div class="mb-6">
+                                        <div class="mb-5">
+                                                <div class="input-group">
+                                                    <div class="input-group-text">
+                                                        <div class="icon icon-lg">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                                        </div>
+                                                    </div>
+
+                                                    <input type="text" 
+                                                            oninput="startSearchQuery(event, this.value, 'create-chat-members', 'create_receiver_', null)" 
+                                                            class="form-control form-control-lg ps-0" placeholder="Search users" aria-label="Search users">
+                                                </div>
+                                        </div>
+                                        <script>
+                                            let createQueryTimer;
+                                            function startSearchQuery(event, query, searchWrapperId, serachUserItemId, serachGroupItemId=null) {
+                                                clearTimeout(createQueryTimer);
+                                                createQueryTimer = setTimeout(() => {
+                                                    searchUsersAndGroups(event, query.toLowerCase(), searchWrapperId, serachUserItemId, serachGroupItemId);
+                                                }, 1000);
+                                            }
+                                        </script>
+
+                                        <ul class="nav nav-pills nav-justified" role="tablist">
+                                            <li class="nav-item">
+                                                <a class="nav-link active" id="details-tab" data-bs-toggle="pill" href="#create-chat-info" role="tab" aria-controls="create-chat-info" aria-selected="true">
+                                                    Details
+                                                </a>
+                                            </li>
+
+                                            {% if request.user.payment.plans.all.count > 1 %}
+                                            <li class="nav-item">
+                                                <a class="nav-link" id="plans-tab" disabled data-bs-toggle="pill" href="#choose-chat-plans" role="tab" aria-controls="choose-chat-plans" aria-selected="true">
+                                                    Plans
+                                                </a>
+                                            </li>
+                                            {% endif %}
+
+                                            <li class="nav-item">
+                                                <a class="nav-link" id="people-tab" disabled data-bs-toggle="pill" href="#create-chat-members" role="tab" aria-controls="create-chat-members" aria-selected="true">
+                                                    People
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- CREATE CHAT -->
+                                    <div class="tab-content" role="tablist">
+                                        <div class="tab-pane fade show active" id="create-chat-info" role="tabpanel">
+
+                                            <div class="card border-0">
+                                                <div class="profile">
+                                                    <div class="profile-img text-primary rounded-top">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 400 140.74"><defs><style>.cls-2{fill:#fff;opacity:0.1;}</style></defs><g><g><path d="M400,125A1278.49,1278.49,0,0,1,0,125V0H400Z"/><path class="cls-2" d="M361.13,128c.07.83.15,1.65.27,2.46h0Q380.73,128,400,125V87l-1,0a38,38,0,0,0-38,38c0,.86,0,1.71.09,2.55C361.11,127.72,361.12,127.88,361.13,128Z"/><path class="cls-2" d="M12.14,119.53c.07.79.15,1.57.26,2.34v0c.13.84.28,1.66.46,2.48l.07.3c.18.8.39,1.59.62,2.37h0q33.09,4.88,66.36,8,.58-1,1.09-2l.09-.18a36.35,36.35,0,0,0,1.81-4.24l.08-.24q.33-.94.6-1.9l.12-.41a36.26,36.26,0,0,0,.91-4.42c0-.19,0-.37.07-.56q.11-.86.18-1.73c0-.21,0-.42,0-.63,0-.75.08-1.51.08-2.28a36.5,36.5,0,0,0-73,0c0,.83,0,1.64.09,2.45C12.1,119.15,12.12,119.34,12.14,119.53Z"/><circle class="cls-2" cx="94.5" cy="57.5" r="22.5"/><path class="cls-2" d="M276,0a43,43,0,0,0,43,43A43,43,0,0,0,362,0Z"/></g></g></svg>
+                                                    </div>
+
+                                                    <div class="profile-body">
+                                                        <div class="avatar avatar-xl">
+                                                            <img class="avatar-img" style="display: none; object-fit:cover;" id="preview_chat_image" alt="Chat image">
+                        
+                                                            <a href="#" class="badge badge-lg badge-circle bg-primary text-white border-outline position-absolute bottom-0 end-0">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                                            </a>
+
+                                                            <input id="upload-chat-img" oninput="previewImage(event, this,'preview_chat_image');" name="profile_image" class="d-none" type="file" accept="image/*" required>
+                                                            <label class="stretched-label mb-0" for="upload-chat-img"></label>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- <div class="profile-body p-0">
+                                                        <div class="avatar avatar-xl">
+                                                            <span class="avatar-text bg-primary" style="overflow: hidden;">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                                                
+                                                            </span>
+
+                                                            <div class="badge badge-lg badge-circle bg-primary border-outline position-absolute bottom-0 end-0">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                                            </div>
+
+                                                            <input id="upload-chat-img" onchange="previewImage(event, this,'preview_chat_image')" name="profile_image" class="d-none" type="file">
+                                                            <label class="stretched-label mb-0" for="upload-chat-img"></label>
+                                                        </div>
+                                                    </div> -->
+                                                </div>
+                                                  
+                                                <div class="card-body">
+                                                    <div class="row gy-6">
+                                                        <div class="col-12">
+                                                            <div class="form-floating">
+                                                                <input type="text" class="form-control" required name="group_name" id="group_name" placeholder="Enter a chat name">
+                                                                <label for="group_name">Enter group name <span style="color:#2787F5">*</span></label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <div class="form-floating">
+                                                                <textarea class="form-control" name="group_info" placeholder="Description" id="floatingTextarea" rows="8" data-autosize="true" style="min-height: 100px;"></textarea>
+                                                                <label for="floatingTextarea">What's your purpose?</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex align-items-center mt-4 px-6">
+                                                <small class="text-muted me-auto">Enter chat name and add a group photo.</small>
+                                            </div>
+
+                                            <!-- Button Choose Plan -->
+                                            <div class="mt-5 position-relative">
+                                                <button type="button" id="choose-plans-btn" 
+                                                {% if request.user.payment.plans.all.count > 1 %}
+                                                onclick="$(`a[href='#choose-chat-plans']`)[0].click()"
+                                                {% else %}
+                                                onclick="$(`a[href='#create-chat-members']`)[0].click()"
+                                                {% endif %} 
+                                                class="btn btn-lg btn-primary w-100 d-flex align-items-center" disabled>
+                                                    Next
+                                                    <span class="icon ms-auto">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {% if request.user.payment.plans.all.count > 1 %}
+                                        <!-- PLANS -->
+                                        <div class="tab-pane fade" id="choose-chat-plans" role="tabpanel">
+                                            
+                                            <!-- <select class="form-select" aria-label="Default select example" name="plan_id">
+                                                <option selected>Open this select menu</option>
+                                                {% for item in request.user.payment.plans.all %}
+                                                <option value="{{ item.plan.id }}">{{ item.plan.title }}</option>
+                                                {% endfor %}
+                                              </select> -->
+                                            <nav>
+                                                {% for item in request.user.payment.plans.all %}
+                                                <!-- Card -->
+                                                <div class="card border-0 mt-5" id="create_receiver_{{user.id}}">
+                                                    <div class="card-body">
+                                                        <div class="row align-items-center gx-5">
+                                                            <!-- <div class="col-auto">
+                                                                <div class="avatar ">
+                                                                        <img class="avatar-img" src="{{ user.profile_image.url }}" alt="">
+                                                                </div>
+                                                            </div> -->
+                                                            <div class="col">
+                                                                <h5>{{ item.plan.title }}&emsp;|&emsp;Max members: {{item.plan.group_size}}</h5>
+                                                                <p>Valid till: {{item.valid_till}}</p>
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="radio" value="{{ item.id }}" name="plan_id" id="id-plan-{{ item.id }}">
+                                                                    <label class="form-check-label" for="id-plan-{{ item.id }}"></label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <label class="stretched-label" for="id-plan-{{ item.id }}"></label>
+                                                    </div>
+                                                </div>
+                                                <!-- Card -->
+                                                {% endfor %}
+                                            </nav>
+                                            <!-- Button Choose Members -->
+                                            <div class="mt-5 position-relative">
+                                                <button id="choose-members-btn" onclick="$(`a[href='#create-chat-members']`)[0].click()" class="btn btn-lg btn-primary w-100 d-flex align-items-center" disabled type="button">
+                                                    Choose Members
+                                                    <span class="icon ms-auto">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        <!-- MEMBERS -->
+                                        <div class="tab-pane fade" id="create-chat-members" role="tabpanel">
+                                            <nav>
+                                            {% for initial, account in accounts.items %}
+                                                <div class="my-5 user_initials">
+                                                    <small class="text-uppercase text-muted">{{ initial }}</small>
+                                                </div>
+                                                {% for user in account %}
+                                                <!-- Card -->
+                                                <div class="card border-0 mt-5" id="create_receiver_{{user.id}}">
+                                                    <div class="card-body">
+                                                        <div class="row align-items-center gx-5">
+                                                            <div class="col-auto">
+                                                                <div class="avatar ">
+                                                                        <img class="avatar-img" src="{{ user.profile_image.url }}" alt="">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col">
+                                                                <h5 data-search='full_name'>{{ user.get_full_name }}</h5>
+                                                                <p data-search="username">{{user.username}}</p>
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" onchange="checkIfUsersSelected(event, this, 'create-chat-members')" type="checkbox" value="{{ user.id }}" name="groupMember[]" id="id-member-{{ user.id }}">
+                                                                    <label class="form-check-label" for="id-member-{{ user.id }}"></label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <label class="stretched-label" for="id-member-{{ user.id }}"></label>
+                                                    </div>
+                                                </div>
+                                                <!-- Card -->
+                                                {% endfor %}
+                                            {% endfor %}
+                                            </nav>
+                                            <!-- Button Start Chat -->
+                                            <div class="mt-5 position-relative">
+                                                <button id="create-chat-members-btn" class="btn btn-lg btn-primary w-100 d-flex align-items-center" disabled type="submit">
+                                                    Start coding
+                                                    <span class="icon ms-auto">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                            <!-- Button -->
+                                        </div>
+                                    </div>
+                                </form>
+                                {######################## End Group Chat Form   ##################################}
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        let pageArr = [
+                            [
+                                'profile_image',
+                                'group_name',
+                            ],
+                            {% if request.user.payment.plans.all.count > 1 %}
+                            [
+                                'plan_id',
+                            ],
+                            {% endif %}
+                            [
+                                'groupMember[]',
+                            ],
+                        ]
+                        let nextBtnArr = [
+                            'choose-plans-btn',
+                            {% if request.user.payment.plans.all.count > 1 %}
+                            'choose-members-btn',
+                            {% endif %}
+                            'create-chat-members-btn',
+                        ]
+                        let tabArr = [
+                            'details-tab',
+                            {% if request.user.payment.plans.all.count > 1 %}
+                            'plans-tab',
+                            {% endif %}
+                            'people-tab',
+                        ]
+                        pageArr.forEach((page, pageIndex)=>{
+                            page.forEach(name => {
+                                document.querySelectorAll(`[name='${name}']`).forEach(inputEl => {
+                                    inputEl.addEventListener('input', function (event){
+                                        unlockNextBtn(
+                                            pageIndex, 
+                                            nextBtnArr[pageIndex],
+                                            // unlocking the next tab 
+                                            tabArr.hasOwnProperty(pageIndex+1) ? tabArr[pageIndex+1]:'',
+                                        )
+                                    })
+                                })
+                            })
+                        })
+                        function unlockNextBtn(pageNo, nextBtn, nextTab) {
+                            let completePageValid = true;
+                            for (let name of pageArr[pageNo]){
+                                const element = document.querySelector(`[name='${name}']`)
+                                if (!element.checkValidity()){
+                                    completePageValid = false;
+                                    break;
+                                }
+                            }
+                            if (completePageValid){
+                                // console.log(document.getElementById(nextTab))
+                                document.getElementById(nextBtn)?.removeAttribute('disabled')
+                                document.getElementById(nextTab)?.removeAttribute('disabled')
+                            } else {
+                                document.getElementById(nextBtn).setAttribute('disabled', '')
+                                // if goes to previous tab and makes page invalid, then disable all further tabs
+                                const nextTabIndex = tabArr.indexOf(nextTab)
+                                for(let [index, tab] of tabArr.entries()){
+                                    if(index >= nextTabIndex){
+                                        document.getElementById(tab)?.setAttribute('disabled', '')
+                                    }
+                                }
+                            }
+                            // fire event for no reason so that validation runs for that page
+                            if (pageArr.hasOwnProperty(pageNo+1)){
+                                document.querySelector(`[name='${pageArr[pageNo+1][0]}']`).dispatchEvent(new Event('change'))
+                                document.querySelector(`[name='${pageArr[pageNo+1][0]}']`).dispatchEvent(new Event('change'))
+                            }
+                        }
+                        function checkIfUsersSelected(e, element, id){
+                            const checked = document.getElementById(`${id}`).querySelectorAll('input:checked')
+                            if (checked.length === 0) {
+                                document.getElementById(`${id}-btn`).setAttribute('disabled', 'true')
+                            } else {
+                                document.getElementById(`${id}-btn`).removeAttribute('disabled')
+                            }
+                        }
+                    </script>
+                </div>

@@ -1,0 +1,1283 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script>
+<script>
+    let receiver = '';
+    let session_id = '{{ request.session.session_key }}';
+    let sender = {{ request.user.id }};
+    let receiver_id = '';
+    let chatSocket;
+    let currentUser = '{{ request.user.email }}';
+    let session = '';
+    let selectedIsUser = null; // For user profile anchor
+
+    {######  Variable used for personal notification and seperation of receiver #######}
+
+    let current_receiver;
+
+    {######  End  Variable used for personal notification and seperation of receiver #######}
+
+
+
+
+
+
+
+    {#######################    Custom Api calls      ##########################    #}
+    function deleteSelectedChat()
+    {
+        let chat_group = $('#chat-group').val();
+        if(chat_group==="P2p") {
+
+            $("input:checkbox[name=input_chat]:checked").each(function () {
+                let id = $(this).val();
+                let chat_line = $(`#chat_line_${id}`);
+                chat_line.remove();
+                $.getJSON(`/chat/api/chat/delete/combine/msg/${id}/`, function (data) {
+                });
+            });
+        }
+        else{
+
+            deleteSelectedGroupChat();
+        }
+    }
+
+    function clearChat()
+    {
+        let chat_group = $('#chat-group').val();
+        if(chat_group==="P2p") {
+            $('#chat-content-div').empty();
+            $.getJSON(`/chat/api/chat/clear/all/chat/${receiver_id}/`, function (data) {
+            });
+        }
+        else{
+            clearGroupChat();
+        }
+    }
+
+
+
+    {#   Method for deleting msg from both side   #}
+
+    {#function deleteSenderMessage(id,receiver_id)#}
+    {#{#}
+    {#    let msgText = $(`#chat_line_${id} div .message-text p`)[0];#}
+    {#    if(msgText) {#}
+    {#        msgText.textContent = "This message was deleted";#}
+    {#    }#}
+    {#    $.getJSON(`/chat/api/sender/msg/delete/${id}/`, function (data) {#}
+    {#    });#}
+    {##}
+    {#    let receiver_for_msg_send = receiver_id;#}
+    {#    let chatsocket = 'chatSocket_chat_'+receiver_for_msg_send;#}
+    {#    let socket = websocket_dict[chatsocket];#}
+    {#    if(socket) {#}
+    {#        socket.send(JSON.stringify({#}
+    {#            'receiver_id': receiver,#}
+    {#            'command': 'notification',#}
+    {#            'msg_id': id,#}
+    {#        }));#}
+    {#    }#}
+    {#}#}
+
+    function deleteSenderMsgforSelf(id)
+    {
+        let msgText = $(`#chat_line_${id}`)[0];
+        msgText.remove();
+        $.getJSON(`/chat/api/sender/msg/delete/self/${id}/`, function (data) {
+        });
+    }
+
+    function deleteReceiverMessage(id)
+    {
+        let msgText = $(`#chat_line_${id}`)[0];
+        msgText.remove();
+        $.getJSON(`/chat/api/receiver/msg/delete/${id}/`, function (data) {
+        });
+
+    }
+
+    function sendMessage(recipient, body)
+    {
+        {#let url = '{% url 'message-api' %}/message';#}
+        $.post('/chat/api/chat/msg/', {
+            recipient: recipient,
+            body: body
+            }).fail(function () {
+        alert('Error! Check console!');
+        });
+    }
+
+    function refreshMessage()
+    {
+        getConversation(receiver);
+    }
+
+    function readUnreadMsg(receiver) {
+        let div_string = `chat_notification_${receiver}`;
+        let divTag = $('#'+div_string);
+        divTag.empty();
+        $.getJSON(`/chat/api/msg/read/${receiver}/`, function (data) {
+        });
+    }
+
+    function getConversation(recipient) {
+    $.getJSON(`/chat/api/chat/msg/?target=${recipient}`, function (data) {
+         $('#chat-content-div').empty();
+        for (let i = data['results'].length - 1; i >= 0; i--) {
+            drawMessage(data['results'][i]);
+        }
+    });
+
+
+
+
+
+    function drawMessage(data) {
+        let html = '';
+        console.log(data)
+        const mediaEl= generateMediaEl(data, currentUser === data['user'])
+        if (currentUser === data['user']) {
+                if(!data['is_delete']) {
+                    html = '';
+                    let base_url = window.location.origin;
+                    let profile_image = base_url + data['user_profile_url'];
+                    html += `
+                                                    <div class="message message-out" id="chat_line_${data['id']}">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="${data['id']}" name="input_chat" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                        ${data['body'] ? 
+                                                            `
+                                                            <div class="message-text">
+                                                                <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                            </div>
+                                                            ` :
+                                                            `
+                                                            ${data['is_media_present']? mediaEl: ''}
+                                                            `
+                                                        }
+                                                        <!-- Dropdown -->
+                                                        <div class="message-action">
+                                                            <div class="dropdown">
+                                                                <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+                                                            <ul class="dropdown-menu">
+                                                                
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteSenderMsgforSelf(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                                {#<li>#}
+                                                                {#    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteSenderMessage(${data['id']}, ${data['recipient_id']})" href="#">#}
+                                                                {#        <span class="me-auto">Delete for Everyone</span>#}
+                                                                {#        <div class="icon">#}
+                                                                {#            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>#}
+                                                                {#        </div>#}
+                                                                {#    </a>#}
+                                                                {#</li>#}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                    </div>
+                                                    ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                `
+                    {#html += `<li class="text-info">${data['user']}: ${data['body']}</li><br>`;#}
+                }
+            }
+            else {
+                if(!data['is_receiver_delete']) {
+                    html = ''
+                    let base_url = window.location.origin;
+                    let profile_image = base_url + data['user_profile_url'];
+
+
+                    html += `
+                     <div class="message" id="chat_line_${data['id']}">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-user-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="${data['id']}" name="input_chat" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                    ${data['body'] ? 
+                                                        `
+                                                        <div class="message-text">
+                                                            <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                        </div>
+                                                        ` :
+                                                        `
+                                                        ${data['is_media_present']? mediaEl: ''}
+                                                        `
+                                                    }
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+                                                            <ul class="dropdown-menu">
+                                                                
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteReceiverMessage(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                `
+                    {#html += `<span class="text-success" style="margin-left: 300px;">${data['user']}: ${data['body']}</span><br>`;#}
+                }
+            }
+            $('#chat-content-div').append(html);
+            scrollChatToEnd($('#chat-content-div'))
+    }
+}
+
+    function getIndividualMsg(id){
+      let my_data = null;
+        $.ajax(
+        {
+            url: `/chat/api/chat/msg/${id}/`,
+            dataType: "json",
+            async: false,
+            success: function(data)
+            {
+                my_data = data;
+            }
+        });
+        return my_data;
+
+    }
+
+    function getUnreadMsgList(id){
+        let my_data = null;
+        $.ajax(
+        {
+            url: `/chat/api/unread/msg/${id}/`,
+            dataType: "json",
+            async: false,
+            success: function(data)
+            {
+                my_data = data;
+
+            }
+        });
+        return my_data;
+    }
+
+{######################                           ###############################}
+</script>
+
+
+
+
+
+{###########################    Script For P2p Chat Socket   ##################}
+<script>
+
+function setReceiver(username,email, id, user_img_url=null,img_url=null, full_name=null, phone_number=null, profile_url=null, designation=null, bio=null)
+    {
+        /*
+        id=receiver_id;
+        user_img_url = receiver
+        img_url = sender
+         */
+
+        /* Disable group id */
+        current_group = null;
+
+        if($('#chat-panel-show-id').is(":hidden"))
+            $('#chat-panel-show-id').show();
+        current_receiver = String(id);
+        readUnreadMsg(id);
+        $('#chatPanel-image').prop("src",user_img_url);
+
+        $('#receiver_img_preview_id').prop("src",img_url);
+        $('#sender_img_preview_id').prop("src",user_img_url);
+        $('#chatPanel-username').text(full_name);
+
+
+
+        {# Modal Body#}
+        $('#setReceiverModal').attr('data-bs-target', '#modal-receiver');
+        $('#receiver_profile_image_url').prop("src", user_img_url);
+        $('#receiver_username').text(username);
+        $('#receiver_full_name').text(full_name);
+        $('#receiver_email').text(email);
+        $('#receiver_phone').text(phone_number);
+        $('#receiver_profile_url').prop("href",profile_url);
+
+        {# Off Canvas #}
+        $('#offcanvas_profile_img_url').prop("src", user_img_url);
+        $('#offcanvas_profile_fullname').text(full_name);
+        $('#offcanvas_profile_username').text(username);
+        // $('#offcanvas-tab-profile-people').text('Profile')
+        
+        $('#offcanvas_profile_designation').text(designation).closest('.list-group-item').show();
+        $('#offcanvas_profile_bio').text(bio).closest('.list-group-item').show();
+        if (!designation)
+            $('#offcanvas_profile_designation').closest('.list-group-item').hide()
+        if (!bio)
+            $('#offcanvas_profile_bio').closest('.list-group-item').hide();
+        $('#offcanvas-dropdown').hide()
+        $('#offcanvas_group_members').hide();
+
+        {# Hiding Call and Chat #}
+        // $('#video_call_form').hide()
+        // $('#audio_call_form').hide()
+        selectedIsUser = true;
+        {#$('.open-notebook').hide()#}
+        $('.open-notebook').attr('onclick', `redirectPeerNotebook(${id})`);
+
+        $('#receiver_for_msg_send').val(id);
+        $('#chat-group').val("P2p");
+
+
+
+        receiver = email;
+        receiver_id = id;
+        current_group = '';
+        {#createConnection(session_id);#}
+        {#saveSession(id);#}
+        refreshMessage();
+        // For mobiles
+        document.querySelector('main.main').classList.add('is-visible')
+    }
+
+function showNotification(receiver){
+        msgList = getUnreadMsgList(receiver)
+        if(msgList) {
+            last_msg = msgList.slice()[0];
+            if (last_msg) {
+                let html = `<div class="line-clamp me-auto" style="-webkit-line-clamp:1; overflow-wrap:anywhere;">
+                     ${last_msg['body']}
+                </div>
+                <div class="badge badge-circle bg-primary ms-5">
+                <span>${msgList.length}</span>
+               </div>`;
+                let div_string = `chat_notification_${receiver}`;
+                let divTag = $('#' + div_string);
+                divTag.empty();
+                divTag.empty();
+                divTag.append(html);
+            }
+        }
+    }
+
+    let x;
+function getMessageById(data) {
+        x = JSON.parse(data);
+        id = JSON.parse(data).id;
+        if(id===undefined){
+            id = data['id'];
+        }
+
+        $.getJSON(`/chat/api/chat/msg/${id}/`, function (data) {
+            let html = '';
+            const mediaEl= generateMediaEl(data, currentUser === data['user'])
+            if (currentUser === data['user']) {
+                html = '';
+                let base_url = window.location.origin;
+                let profile_image = base_url + data['user_profile_url'];
+                html += `
+                                                    <div class="message message-out" id="chat_line_${data['id']}">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="${data['id']}" name="input_chat" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                    ${data['body'] ? 
+                                                        `
+                                                        <div class="message-text">
+                                                            <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                        </div>
+                                                        ` :
+                                                        `
+                                                        ${data['is_media_present']? mediaEl: ''}
+                                                        `
+                                                    }
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+                                                            <ul class="dropdown-menu">
+                                                                
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteSenderMsgforSelf(${data['id']})"  href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                                {#<li>#}
+                                                                {#    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteSenderMessage(${data['id']}, ${data['recipient_id']})" href="#">#}
+                                                                {#        <span class="me-auto">Delete for Everyone</span>#}
+                                                                {#        <div class="icon">#}
+                                                                {#            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>#}
+                                                                {#        </div>#}
+                                                                {#    </a>#}
+                                                                {#</li>#}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                `
+                {#html += `<li class="text-info">${data['user']}: ${data['body']}</li><br>`;#}
+            }
+            else {
+                html = ''
+                let base_url = window.location.origin;
+                let profile_image = base_url + data['user_profile_url'];
+                html += `
+                     <div class="message" id="chat_line_${data['id']}">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modal-user-profile" class="avatar avatar-responsive">
+                                            <img class="avatar-img" src="${profile_image}" alt="">
+                                        </a>
+                                        <div class="message-inner">
+                                            <div class="message-body">
+                                                <div class="message-content">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="${data['id']}" name="input_chat" id="id-member-9">
+                                                        <label class="form-check-label" for="id-member-9"></label>
+                                                    </div>
+                                                    ${data['body'] ? 
+                                                        `
+                                                        <div class="message-text">
+                                                            <p style="overflow-wrap:anywhere;">${urlify(data['body'])}</p>
+                                                        </div>
+                                                        ` :
+                                                        `
+                                                        ${data['is_media_present']? mediaEl: ''}
+                                                        `
+                                                    }
+                                                    <!-- Dropdown -->
+                                                    <div class="message-action">
+                                                        <div class="dropdown">
+                                                            <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                            </a>
+                                                            <ul class="dropdown-menu">
+                                                                
+                                                                <li>
+                                                                    <a class="dropdown-item d-flex align-items-center text-danger" onclick="deleteReceiverMessage(${data['id']})" href="#">
+                                                                        <span class="me-auto">Delete</span>
+                                                                        <div class="icon">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${data['body'] && data['is_media_present'] ? mediaEl: ''}
+                                            </div>
+                                            <div class="message-footer">
+                                                <span class="extra-small text-muted">${data['timestamp']}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                `
+                {#html += `<span class="text-success" style="margin-left: 300px;">${data['user']}: ${data['body']}</span><br>`;#}
+            }
+
+            $('#chat-content-div').append(html);
+            scrollChatToEnd($('#chat-content-div'))
+        });
+    }
+    let anu;
+    let websocket_dict = {};
+    {% for item in chat_list_user %}
+        let chatSocket_chat_{{ item.id }};
+        let receiver_{{ item.id }} = "{{ item.id }}";
+        loc = window.location;
+    wsStart = 'ws://';
+
+    if(loc.protocol === 'https:'){
+        wsStart = 'wss://';
+    }
+        chatSocket_chat_{{ item.id }} = new WebSocket(wsStart + window.location.host +
+        '/ws/chat/p/'+sender+"/"+receiver_{{ item.id }}+"/");
+
+        websocket_dict["chatSocket_chat_{{ item.id }}"] = chatSocket_chat_{{ item.id }};
+
+        chatSocket_chat_{{ item.id }}.onopen = function (e)
+        {
+        }
+
+        chatSocket_chat_{{ item.id }}.onmessage = function (e) {
+            console.log(e['data'], 'DATA');
+            data = JSON.parse(e['data']);
+            anu = data;
+            let check = $('#chat-group').val();
+                if (check === "P2p") {
+                    if (String(data.sender_id) === String(current_receiver) || String(data.receiver_id) === String(current_receiver || !current_receiver)) {
+                        console.log("from receiver");
+                        getMessageById(e['data']);
+                    }
+                    else{
+                        showNotification(data.sender_id);
+                    }
+                }
+                else{
+                        showNotification(data.sender_id);
+                    }
+
+               refreshPanelPosition();
+
+        }
+
+
+
+
+
+    {% endfor %}
+
+    
+
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            var messageInputDom = document.querySelector('#chat-message-input');
+            var message = messageInputDom.value;
+
+            let value = message.replace(/\n/g, "");
+            if(value.length >0) {
+                if (e.keyCode === 13) {  // enter, return
+                    document.querySelector('#chat-message-submit').click();
+                }
+            }
+        };
+
+        drop_zone.on("successmultiple", (function (data) {
+            var messageInputDom = document.querySelector('#chat-message-input');
+            var message = messageInputDom.value;
+            let value = message.replace(/\n/g, "");
+            // console.log(data);
+            // bucket_id = data;
+            // $('#modalForUploadingData').modal('hide');
+            bucket_id = JSON.parse(data[0]['xhr'].responseText)['bucket_id'];
+            console.log(bucket_id, "Bucket ID")
+            let check = $('#chat-group').val();
+            if (check === "P2p") {
+                receiver_for_msg_send = $('#receiver_for_msg_send').val();
+                chatsocket = 'chatSocket_chat_' + receiver_for_msg_send;
+                socket = websocket_dict[chatsocket];
+                if (socket) {
+
+                    socket.send(JSON.stringify({
+                        'message': message,
+                        'receiver_id': receiver,
+                        'command': 'new_message',
+                        'bucket_id': bucket_id,
+                    }));
+                    $('#dz-preview-row').empty();
+                }
+            }
+            if (check === "Group") {
+
+                receiver_for_group_send = $('#receiver_for_group_send').val();
+
+                chatsocket = 'group_chatSocket_chat_' + receiver_for_group_send;
+                socket = group_websocket_dict[chatsocket];
+                socket.send(JSON.stringify({
+                    'message': message,
+                    'receiver_id': receiver,
+                    'command': 'new_message',
+                    'bucket_id': bucket_id,
+
+                }));
+                $('#dz-preview-row').empty();
+            }
+            // Remove padding from dropzone after sending file
+            $('#dz-preview-row').removeClass('dz-preview-moved pb-10 pt-3 px-2');
+            messageInputDom.value = '';
+            // drop_zone values don't get automatically reset hence needs to be done manually.
+            drop_zone.files.length = 0;
+        }));
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            e.preventDefault()
+            var messageInputDom = document.querySelector('#chat-message-input');
+            var message = messageInputDom.value;
+            let value = message.replace(/\n/g, "");
+            // console.log(drop_zone.files<0);
+            if(drop_zone.files.length) {
+                if (drop_zone.getQueuedFiles().length) {
+                    drop_zone.processQueue();
+                }
+                // $('#modalForUploadingData').modal('show');
+            } else {
+                if (value.length > 0) {
+                    console.log("Sending messgae");
+                    let check = $('#chat-group').val();
+                    if (check === "P2p") {
+                        receiver_for_msg_send = $('#receiver_for_msg_send').val();
+                        chatsocket = 'chatSocket_chat_' + receiver_for_msg_send;
+                        socket = websocket_dict[chatsocket];
+                        console.log(bucket_id + " bucket_id");
+                        if (socket) {
+                            socket.send(JSON.stringify({
+                                'message': message,
+                                'receiver_id': receiver,
+                                'command': 'new_message',
+                                'bucket_id': 0,
+                            }));
+                        }
+                    }
+                    if (check === "Group") {
+
+                        receiver_for_group_send = $('#receiver_for_group_send').val();
+
+                        chatsocket = 'group_chatSocket_chat_' + receiver_for_group_send;
+                        socket = group_websocket_dict[chatsocket];
+                        socket.send(JSON.stringify({
+                            'message': message,
+                            'receiver_id': receiver,
+                            'command': 'new_message',
+                            'bucket_id': 0,
+
+                        }));
+                    }
+                    messageInputDom.value = '';
+                }
+            }
+            // Textarea back to normal size
+            messageInputDom.style.height = '46px';
+        };
+
+        // Scrolls chat messages to end.
+        function scrollChatToEnd(jQueryElement) {
+            element = jQueryElement.closest('.chat-body')[0]
+            element.scrollTop = element.scrollHeight;
+        }
+        // Delete File from UI
+        function deleteFile(e, element) {
+            element.closest('.list-group-item').remove()
+        }
+        // Shows image preview after uploading during group creation.
+        function previewImage(e, El, previewLocationId) {
+            // console.log(e, El, previewLocationId)
+            previewEl = document.getElementById(previewLocationId);
+            let oldImageLink = previewEl.src
+            const file = e.target.files[0];
+            if (oldImageLink !== null) {
+                URL.revokeObjectURL(oldImageLink)
+                previewEl.style.display = 'none';
+            }
+            if (file){
+                previewEl.src = URL.createObjectURL(file);
+                previewEl.style.display = 'inline-block';
+            }
+
+        }
+        // Toast Generator
+        function setToast(data){
+            let tag;
+            data['error'] ? tag='danger':tag='info';
+
+            const toast = `
+                <div class="toast fade show mb-4" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <div class="d-flex align-items-center justify-content-center avatar avatar-xs me-1">
+                            <span style="width: 10px; height: 10px;" class="avatar-text bg-${tag}">
+                            </span>
+                        </div>
+                        <h6 class="me-auto">${data['error'] ? 'Error':'Info'}</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${data['data'] || data['error']}
+                    </div>
+                </div>
+                `
+            $('#notif-region').append(toast);
+        }
+        // Media Element Generator
+        function generateMediaEl(data, isCurrentUser){
+            let mediaEl = 'No Media Here'
+            let html = ''
+            data['media_files']?.forEach((file, index) => {
+                const ext = checkURL(file);
+                if (ext==='image'){
+                html += `<div class="m-1" style="max-width:250px; max-height: 250px;">
+                            <img class="img-fluid rounded w-100 h-100" style="object-fit:cover; object-position: center;" src="${file}" data-action="zoom" alt="">
+                        </div>`
+                } else if (ext==='video'){
+                    html += `<div class="m-1" style="max-width:250px; max-height: 250px;">
+                                <video controls class="rounded w-100 h-100" style="object-fit:contain;">
+                                    <source src="${file}">
+                                    Sorry, your browser doesn't support embedded videos.
+                            </div>`
+                } else if (ext==='file') {
+                    const name_cryptic_ext = file.split('/').pop();
+                    let filename = name_cryptic_ext; // May or may not have cryptic part.
+                    filename = filename.replace(/^(.+)(_.+)(\..+)$/, '$1$3')
+                    // const remaining_name_arr = name_cryptic_ext.split('_').slice(0, -1)
+                    // const ext = name_cryptic_ext.split('.').pop()
+                    // if (remaining_name_arr.length > 0){
+                    //     filename = remaining_name_arr.join(' ') +'.'+ ext;
+                    // }
+                    html += `<div class="m-1 message-text rounded d-flex align-items-center" style="width:auto; height: 70px;">
+                                <a href="${file}" target="_blank" download="${filename}" style="flex-shrink:0;" class="avatar avatar-sm">
+                                    <div class="avatar-text bg-white text-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-down"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                                    </div>
+                                </a>
+                                <h6 class="text-truncate text-reset">
+                                    <a href="#" class="m-3 text-reset">${filename}</a>
+                                </h6>
+                            </div>`
+                }
+            })
+            if (data['media_files']){
+                mediaEl=`
+                    <div class="message-gallery mt-3" ${data['body']?`style="margin:30px"`:``}>
+                        <div class="d-flex flex-wrap justify-content-${isCurrentUser?'end':'start'}">
+                            ${html}
+                        </div>
+                    </div>
+                `
+            }
+            
+            return mediaEl;
+        }
+        // Check URL for media type
+        function checkURL(url){
+            if (url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null) return 'image'
+            else if (url.match(/\.(mp4|ogg|webm)$/) != null) return 'video'
+            else return 'file'
+        }
+        // Sends Add Member form asynchronously
+        $('#add-chat-members-form').submit(function (e) {
+            e.preventDefault()
+            const formDataSerialized = $(this).serialize()
+            console.log(`add/member/group/?${formDataSerialized}`)
+            $.getJSON(`add/member/group/?${formDataSerialized}`, function (data) {
+                const formData = new FormData(e.target)
+                $(`#group_receiver_${formData.get('pk')}`).click();
+                $('#notif-region').append(setToast(data));
+            });
+        })
+        // Delete member from group
+        function deleteMember(element, groupId, pk) {
+            const bol = confirm('You are about to remove a member from the group. Do you wish to proceed?')
+            if (bol){
+                $.getJSON(`remove/from/group/${groupId}/${pk}/`, function (data) {
+                    console.log(data, " DATA 1")
+                    setToast(data)
+                    if (data['data']){
+                        // element.closest(`[data-delete='deleteMember']`).remove();
+                        // element.closest('li').remove();
+                        $(`#group_receiver_${groupId}`).click();
+                    }
+                })
+            }
+        }
+        // Delete group
+        function deleteGroup(pk) {
+            const bol = confirm('You are about to delete a group! The process is irreversible. Do you wish to proceed?')
+            if (bol){
+                $.getJSON(`delete/group/?pk=${pk}`, function (data) {
+                    console.log(data, " DATA 2")
+                    setToast(data)
+                    if (data['data']){
+                        location.reload()
+                    }
+                })
+            }
+        }
+        // Leave from group
+        function leaveGroup(element, groupId, pk) {
+            const bol = confirm('You are about to leave a group. Do you wish to proceed?')
+            if (bol){
+                $.getJSON(`leave/from/group/${groupId}/${pk}/`, function (data) {
+                    console.log(data, " DATA 3")
+                    setToast(data)
+                    if (data['data']){
+                        // element.closest(`[data-delete='deleteMember']`).remove();
+                        location.reload()
+                    }
+                })
+            }
+        }
+        // Search users
+        function searchUsersAndGroups(event, query, searchWrapperId, searchUserItemId, searchGroupItemId=null){
+            console.log(event, query, searchWrapperId, searchUserItemId, searchGroupItemId, "EQSSS")
+            searchWrapperEl = document.getElementById(searchWrapperId);
+            searchUserItemEls = searchWrapperEl.querySelectorAll(`[id^='${searchUserItemId}']`);
+            // console.log(searchUserItemEls)
+            if (query) {
+                searchWrapperEl.querySelectorAll('.user_initials')?.forEach((item)=>item.style.display='none');
+                // console.log(searchWrapperEl.querySelectorAll('.user_initials'))
+                $('#loadRegion').hide();
+            } else {
+                searchWrapperEl.querySelectorAll('.user_initials')?.forEach((item)=>item.style.display='block');
+                // console.log(searchWrapperEl.querySelectorAll('.user_initials'))
+                $('#loadRegion').show();
+            }
+            searchUserItemEls?.forEach((item, index) => {
+                if (item.querySelector(`[data-search='username']`).innerText.toLowerCase().includes(query) || 
+                    item.querySelector(`[data-search='full_name']`).innerText.toLowerCase().includes(query) ) {
+                    item.style.display = 'flex'
+                } else {
+                    item.style.display = 'none'
+                }
+            })
+            searchGroupItemEls = searchWrapperEl.querySelectorAll(`[id^='${searchGroupItemId}']`);
+            searchGroupItemEls?.forEach((item, index) => {
+                if (item.querySelector(`[data-search='groupname']`).innerText.toLowerCase().includes(query)) {
+                    item.style.display = 'flex'
+                } else {
+                    item.style.display = 'none'
+                }
+            })
+        }
+        function sendFriendRequest(e, reload=false){
+            e.preventDefault()
+            const formData = new FormData(e.target)
+            fetch("{% url 'user:send-request' %}", {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                return response.json()
+            }).then(data => {
+                setToast(data);
+                if (data['data'] && reload ){
+                    location.reload()
+                }
+            })
+        }
+        function acceptFriendRequest(e, reload=false){
+            e.preventDefault()
+            const formData = new FormData(e.target)
+            fetch("{% url 'user:accept-user' %}", {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                return response.json()
+            }).then(data => {
+                setToast(data)
+                if (data['data'] && reload ){
+                    location.reload()
+                }
+            })
+        }
+        // process body for links
+        function urlify(msg){
+            const regex = RegExp(/(https?:\/\/[^\s]+)/)
+            const processedMsg = msg.replace(regex, function(url) {
+                return `<a href="${url}" target="_blank" style="color: inherit; text-decoration:underline; overflow-wrap: anywhere;">${url}</a>`;
+            })
+            return processedMsg;
+        }
+        // show profile on click
+        function  showUserProfile(e) {
+            if (selectedIsUser)
+                $('#receiver_profile_url')[0].click()
+        }
+        // show more users dynamically
+        function loadMoreRemainingUsers() {
+            userListContainer = document.getElementById('user-list-left-panel')
+            userCount = userListContainer.querySelectorAll(`div[id^='remaining_']`).length
+            // console.log(userCount)
+
+            $.getJSON("{% url 'chat:load-more-remaining-users' %}", 
+            {current_users:userCount}, 
+            function(data){
+                if(data.status===false){
+                    $('#loadmore-users-btn').hide()
+                    $('#nomore-users').show()
+                } else {
+                    for (let [key, value] of Object.entries(data.users)){
+                        // console.log(key, value)
+                        initialEl = userListContainer.querySelector(`.user_initials[data-value="${key}"]`)
+                        if(!initialEl){
+                            let newInitialEl = `
+                                <div class="my-5 user_initials" data-value="${key}">
+                                    <small class="text-uppercase text-muted">${key}</small>
+                                </div>
+                            `
+                            userListContainer.insertAdjacentHTML('beforeEnd', newInitialEl)
+                        }
+                        allInitials = [...userListContainer.querySelectorAll(`.user_initials`)]
+                        initialEl = userListContainer.querySelector(`.user_initials[data-value="${key}"]`)
+                        initialElIndex = allInitials.indexOf(initialEl)
+                        nextInitialEl = allInitials[initialElIndex+1]
+                        value?.forEach((user)=>{
+                            if (nextInitialEl){
+                                nextInitialEl.insertAdjacentHTML('beforeBegin', createChatItem(user))
+                            } else {
+                                userListContainer.insertAdjacentHTML('beforeEnd', createChatItem(user))
+                            }
+                        })
+                    }
+                }
+            });
+        }
+        // create user item for chat
+        function createChatItem(user){
+            let chatItemEl = `
+            <div class="card border-0" id="remaining_${user.id}">
+                <div class="card-body">
+
+                    <div class="row align-items-center gx-5">
+                        <div class="col-auto">
+                            <a href="${ user.profile }" class="avatar">
+                                <img src="${ user.profile_img }" alt=""  style="object-fit: cover;" class="avatar-img">
+                            </a>
+                        </div>
+
+                        <a href="${ user.profile }" style="color: inherit;" class="col">
+                            <h5 data-search="full_name">${ user.name }</h5>
+                            <p data-search="username">${ user.username }</p>
+                        </a>
+
+                        <div class="col-auto">
+                            <!-- Dropdown -->
+                            <div class="dropdown">
+                                <a class="icon text-muted" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                </a>
+
+                                <ul class="dropdown-menu">
+                                    <li onclick="this.querySelector(${"`"+"button[type='submit']"+"`"}).click()">
+                                        <a class="dropdown-item" href="#">Send Request</a>
+                                        <form method="post" onsubmit="sendFriendRequest(event)" action="">
+                                            <input type="hidden" name="id" value="${ user.id }">
+                                            {% csrf_token %}
+                                            <button class="d-none" type="submit"></button>
+                                        </form>
+                                    </li>
+                                    {% comment %} <li><a class="dropdown-item" href="#">Edit contact</a> {% endcomment %}
+                                    </li>
+
+
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `
+            return chatItemEl;
+        }
+        // Redirect to jupyter notebook
+        function redirectNotebook(){
+
+        }
+        function redirectPeerNotebook(user_id){
+
+        }
+        // Repeat a task multiple times
+        function setIntervalX(callback, delay, repetitions){
+            let x = 0;
+            let intervalID = setInterval(() => {
+                callback();
+                if (++x === repetitions){
+                    clearInterval(intervalID)
+                }
+            }, delay);
+        }
+        $(document).ready(()=>{
+            loadMoreRemainingUsers()
+        })
+
+
+
+    function setupNewWebsocket(user_id)
+    {
+        window['chatSocket_chat_'+user_id];
+        
+        loc = window.location;
+        wsStart = 'ws://';
+
+        if(loc.protocol === 'https:'){
+            wsStart = 'wss://';
+        }
+        window['chatSocket_chat_'+user_id] = new ReconnectingWebSocket(wsStart + window.location.host +
+        '/ws/chat/p/'+sender+"/"+user_id+"/");
+
+        websocket_dict["chatSocket_chat_"+user_id] = window['chatSocket_chat_'+user_id];
+
+        window['chatSocket_chat_'+user_id].onopen = function (e)
+        {
+        }
+
+       window['chatSocket_chat_'+user_id].onmessage = function (e) {
+            console.log(e['data'], 'DATA');
+            data = JSON.parse(e['data']);
+            anu = data;
+            let check = $('#chat-group').val();
+                if (check === "P2p") {
+                    if (String(data.sender_id) === String(current_receiver) || String(data.receiver_id) === String(current_receiver || !current_receiver)) {
+                        console.log("from receiver");
+                        getMessageById(e['data']);
+                    }
+                    else{
+                        showNotification(data.sender_id);
+                    }
+                }
+                else{
+                        showNotification(data.sender_id);
+                    }
+               refreshPanelPosition();
+            }
+    }
+
+    function setupNewGroupWebsocket(group_id, group_name)
+    {
+        window['group_chatSocket_chat_'+group_id];
+        
+        wsStart = 'ws://';
+        loc = window.location;
+        if(loc.protocol === 'https:'){
+            wsStart = 'wss://';
+        }
+        window['group_chatSocket_chat_'+group_id] = new WebSocket(
+        wsStart + window.location.host +
+            '/ws/chat/group/' + group_name + '/'+ sender +'/');
+
+            group_websocket_dict["group_chatSocket_chat_"+group_id] = window['group_chatSocket_chat_'+group_id];
+
+        window['group_chatSocket_chat_'+group_id].onmessage = function (e)
+        {
+            console.log("Group data");
+            data = JSON.parse(e['data']);
+            console.log(data);
+            if (String(current_group) === String(data.group_id)) {
+                    getGroupMessageById(e['data']);
+                }
+
+                else{
+                    showGroupNotification(data.group_id);
+                }
+
+                refreshPanelPosition();
+
+        }
+    }
+
+    function createNewPanel(user_id,username, email, profile_img_url,user_full_name,
+    phone_number, profile_url, designation, bio, self_img_url)
+    {
+        let panel_html = `
+        <a style="cursor:pointer;" id="receiver_${user_id}" 
+                                        onclick="setReceiver(
+                                            '${username}',
+                                            '${email}',
+                                            '${user_id}',
+                                            '${profile_img_url}',
+                                            '${self_img_url}',
+                                            '${user_full_name}',
+                                            '${phone_number}',
+                                            '${profile_url}',
+                                            '${designation}',
+                                            '${bio}')"
+                                            class="card border-0 text-reset">
+                                            <div class="card-body">
+                                                <div class="row gx-5">
+                                                    <div class="col-auto">
+                                                        <div class="avatar">
+                                                            <img src="${profile_img_url}" alt="#" style="object-fit: cover;" class="avatar-img">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col">
+                                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                                            <div class="">
+                                                                <h5 data-search='full_name' class="me-auto mb-0">${user_full_name}</h5>
+                                                                <h6 data-search='username' class="text-muted me-auto mb-0">${username}</h6>
+                                                            </div>
+
+                                                        </div>
+
+                                                        <div class="d-flex align-items-center" id="chat_notification_${user_id}">
+
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+        `;
+
+        $('#contact-list-left-panel').prepend(panel_html);
+    }
+
+    function createNewGroupPanel(group_name_for_socket, profile_image_url, self_img_url, group_id, group_info,
+    group_name)
+    {
+        let html_panel = `
+        <a style="cursor:pointer;background: rgba(49, 133, 252, 0.14);" id="group_receiver_{{ object.id }}"
+                                        onclick="setGroup(
+                                            '${group_name_for_socket}',
+                                            '${profile_image_url}',
+                                            '${self_img_url}',
+                                            '${group_id}',
+                                            '${group_info}','${group_name}')"
+                                            class="card border-0 text-reset">
+                                            <div class="card-body">
+                                                <div class="row gx-5">
+                                                    <div class="col-auto">
+                                                        <!-- <div class="avatar-group">
+                                                            <a href="#" class="avatar">
+                                                                <img src='${self_img_url}' alt="#"  style="object-fit: cover;" class="avatar-img">
+                                                            </a>
+                                                            <a href="#" class="avatar">
+                                                                <img src="${profile_image_url}"  alt="#"  style="object-fit: cover;" class="avatar-img">
+                                                            </a>
+                                                        </div> -->
+                                                        <div class="avatar">
+                                                            <img src="${profile_image_url}" alt="#" style="object-fit: cover;" class="avatar-img">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col">
+                                                        <div class="d-flex align-items-center mb-3">
+                                                            <div>
+                                                            <h5 data-search='groupname' class="me-auto mb-0">${group_name}</h5>
+                                                            <h6 data-search='username' class="me-auto mb-0" style="color: #68748D;font-size: 13px;"></h6>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex align-items-center" id="group_notification_${group_id}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+        `;
+        $('#contact-list-left-panel').prepend(html_panel);
+    }
+
+
+    function get_new_notification()
+    {
+        {#let url = "{% url 'chat:user-new-notification' %}";#}
+        {#$.ajax({#}
+        {#    url: url,#}
+        {#    success: function(data){#}
+        {#        get_loop_data(data);#}
+        {#    }#}
+        {#});#}
+    }
+
+    function get_loop_data(data)
+    {
+        $.each(data['data'], function(e){
+            user = data['data'][e];
+            if(user['type'] === 'p2p')
+            {
+            createNewPanel(user['user_id'],user['username'], user['email'], user['profile_img_url'],user['user_full_name'],
+    user['phone_number'], user['profile_url'], user['designation'], user['bio'], "{{ request.user.get_profile_img }}");
+            setupNewWebsocket(user['user_id']);
+            deleteNotification(user['email']);
+            }
+            else{
+                createNewGroupPanel(user['group_name_for_socket'], user['profile_image_url'],"{{ request.user.get_profile_img }}" , user['group_id'], user['group_info'],
+                    user['group_name']);
+                setupNewGroupWebsocket(user['group_id'], user['group_name_for_socket']);
+                deleteGroupNotification(user['group_name_for_socket']);
+            }
+
+        });
+    }
+
+    function deleteNotification(email)
+    {
+        {#let url = "{% url 'chat:user-delete-notification' %}";#}
+        {#$.ajax({#}
+        {#    url : url,#}
+        {#    type: "POST",#}
+        {#    data : {#}
+        {#        'email': email,#}
+        {#    },#}
+        {#    success: function(data)#}
+        {#    {#}
+        {#        console.log(data);#}
+        {#    }#}
+        {#});#}
+    }
+
+    function deleteGroupNotification(groupName)
+    {
+        {#let url = "{% url 'chat:user-delete-group-notification' %}";#}
+        {#$.ajax({#}
+        {#    url : url,#}
+        {#    type: "POST",#}
+        {#    data : {#}
+        {#        'group_name': groupName,#}
+        {#    },#}
+        {#    success: function(data)#}
+        {#    {#}
+        {#        console.log(data);#}
+        {#    }#}
+        {#});#}
+    }
+    $(document).ready(function(){
+        const interval = setInterval(function() {
+            get_new_notification();
+        }, 10000);
+    });
+</script>
+{###########################    End of Script For P2p Chat Socket   ##################}
+</body>
+
