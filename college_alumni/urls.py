@@ -7,6 +7,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')),
     path('chat/', include('chat.urls')),
+    path('post/', include('post.urls')),
+    path('analytics/', include('analytics.urls')),
+    path('college/', include('college.urls')),
+    path('industry/', include('industry.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

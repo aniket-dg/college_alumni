@@ -1,0 +1,144 @@
+{% extends 'analytics/base.html' %}
+{% load static %}
+{% block content %}
+ <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div class="row">
+            <div class="col-md-12">
+                  <div class="card mb-4">
+                    <h5 class="card-header">Info</h5>
+                      <form method="post" action="{% url 'college:info' college_info.id %}" enctype="multipart/form-data">
+                          {% csrf_token %}
+                    <div class="card-body">
+{#                      <span class="text-info"><strong>Note: </strong>All fields are not necessary to filter result</span><br>#}
+                     <div class="row">
+                     <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">College Name</label>
+                        <input type="text" class="form-control" readonly id="exampleFormControlInput1" placeholder="" value="{{ college_info.name }}">
+                      </div>
+
+
+                     </div>
+                     <div class="mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">About us</label>
+                         <textarea class="form-control" name="about_us" id="exampleFormControlTextarea1" rows="3">{% if college_info.about_us %}{{ college_info.about_us }}{% endif %}</textarea>
+                      </div>
+
+                     <div class="row">
+                         <div class="col mb-3">
+
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">College Logo</label>
+                        <input class="form-control" type="file" name="profile_img" id="profileImage">
+                        </div>
+{#                      <div class="row">#}
+                        <div class="col mb-3">
+                        <img id="previewProfileImage" height="186px" width="182px"  {% if college_info.profile_img %}src="{{ college_info.profile_img.url }}" {% endif %} class="img-rounded" alt="College Logo">
+                        </div>
+                        <script>
+                            function readNewImage(input)
+                            {
+                                if (input.files && input.files[0]) {
+                                var reader = new FileReader();
+
+                                reader.onload = function (e) {
+                                $('#previewProfileImage').attr('src', e.target.result);
+                                }
+                                reader.readAsDataURL(input.files[0]);
+                                }
+                            }
+                            $('#profileImage').change(function(){
+                                readNewImage(this);
+                            });
+                        </script>
+                     </div>
+                        <div class="row">
+                      <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInputPlain1" class="form-label">Phone Number</label>
+                        <input class="form-control" type="tel" id="exampleFormControlReadOnlyInput1" {% if college_info.phone_number %}value="{{ college_info.phone_number }}" {% endif %}  name="phone_number">
+                      </div>
+                            <div class="col mb-3">
+                        <label for="exampleFormControlSelect1" class="form-label">Website Url</label>
+                        <input type="text" class="form-control" name="website" {% if college_info.website %}value="{{ college_info.website }}" {% endif %} id="exampleFormControlInput1" placeholder="">
+                      </div>
+                    </div>
+                        <div class="row col-6">
+                         <div class="col mb-3" id="">
+                         </div>
+                         </div>
+
+
+                        <div class="row col-6">
+                         <div class="col mb-3" >
+                             <ul class="list-group" id="branchesPanel">
+  <li class="list-group-item active">Branches</li>
+</ul>
+                             <br>
+                             <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Information Technology" id="branchName" aria-label="" aria-describedby="">
+                        <button class="btn btn-outline-primary" type="button" id="addBranchBtn">Add Branch</button>
+                      </div>
+                        </div>
+
+                         </div>
+                        <script>
+                            {% for item in college_info.branches.all %}
+                                addBranch("{{ item.name }}");
+                            {% endfor %}
+                            $('#addBranchBtn').on('click', function(){
+                               branch = $('#branchName').val();
+                               if(branch.length>1)
+                               {
+                                   html = `<li class="list-group-item">${branch}<button onclick="removeBranch(this, ${branch})" type="button" style="margin-left: 100px;" class="pull-right btn rounded-pill btn-icon btn-outline-secondary">
+                              <span class="tf-icons bx bx-x" ></span>
+                            </button></li><input type="hidden" name="branches[]" value="${branch}">`
+                                   $('#branchesPanel').append(html);
+                                   $('#branchName').val("");
+                               }
+                            });
+
+                            function addBranch(branch)
+                            {
+                                {
+                                   html = `<li class="list-group-item">${branch}<button onclick="removeBranch(this, '${branch}')" type="button" style="margin-left: 100px;" class="pull-right btn rounded-pill btn-icon btn-outline-secondary">
+                              <span class="tf-icons bx bx-x" ></span>
+                            </button></li><input type="hidden" value="${branch}">`
+                                   $('#branchesPanel').append(html);
+                                   $('#branchName').val("");
+                               }
+                            }
+
+
+
+                            function removeBranch(item, branch)
+                                    {
+                                        console.log(item);
+                                        console.log($(item).parent().parent().find('li')[0].innerHTML);
+                                        console.log($(item).parent().remove());
+
+                                        url = "{% url 'college:delete-branch' %}";
+                                        $.ajax({
+                                            url : url,
+                                            data: {
+                                                'name': branch,
+                                            },
+                                            method: 'GET',
+                                            success: function(data)
+                                            {
+                                                console.log(data);
+                                            }
+                                        });
+                                    }
+                        </script>
+
+                        <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                        </div>
+                          </form>
+                </div>
+        </div>
+
+
+            <div class="content-backdrop fade"></div>
+{% endblock %}

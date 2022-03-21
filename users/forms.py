@@ -4,13 +4,17 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils.translation import gettext_lazy as _
 
-from users.models import User
+from users.models import User, UserBasic, UserEducation
 
 
 class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('email', 'first_name', 'last_name','phone_number', 'password1', 'password2')
+        fields = ('email', 'username','first_name', 'last_name','phone_number', 'password1', 'password2', 'uploaded_document')
+
+    def __init__(self, *args, **kwargs):
+        super(RegistrationForm, self).__init__(*args, **kwargs)
+        self.fields['uploaded_document'].required = True
 
     def clean(self):
         super(RegistrationForm, self).clean()
@@ -19,6 +23,15 @@ class RegistrationForm(UserCreationForm):
             raise ValidationError(
                 _(f'{phone_number} is not an valid mobile number'))
 
+class ProfilePhotoForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['profile_image']
+
+class CoverPhotoForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['cover_image']
 
 class LoginForm(forms.Form):
     email = forms.CharField(label='email')
@@ -42,3 +55,18 @@ class UserUpdateForm(forms.ModelForm):
         except User.DoesNotExist:
             return email
         raise forms.ValidationError('email "%s" is already in use.' % email)
+
+class UserBasicForm(forms.ModelForm):
+    class Meta:
+        model = UserBasic
+        fields = ['dob', 'city', 'country', 'about_me']
+
+class UserNameForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone_number']
+
+class UserEducationForm(forms.ModelForm):
+    class Meta:
+        model = UserEducation
+        exclude = ['user']

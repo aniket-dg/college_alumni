@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
     path('profile/', views.UserProfileView.as_view(), name='profile'),
+    path('friend/list/<int:pk>/', views.UserUserFriendView.as_view(), name='user-user-friend'),
     path('update/<int:pk>/', views.UserUpdateView.as_view(), name='update'),
 
 
@@ -41,5 +42,19 @@ urlpatterns = [
     path('accept/request/', views.AcceptUserRequest.as_view(), name='accept-user'),
     path('send/request/', views.SendUserRequest.as_view(), name='send-request'),
     path('profile/<int:pk>/', views.UserFriendProfileView.as_view(), name='friend-profile'),
+    path('search/', views.UsersAndPostsSearchView.as_view(), name='search-user-post'),
+    path('unfriend/user/<int:pk>/', views.UnfriendUser.as_view(), name='unfriend-user'),
 
+    path('timeline/', views.UserTimeLineView.as_view(), name='user-timeline'),
+    path('timeline/<int:pk>/', views.UserFriendTimeLineView.as_view(), name='user-friend-timeline'),
+    path('groups/', views.UserGroupsView.as_view(), name='user-groups'),
+    path('friend/groups/<int:pk>/', views.UserFriendGroupsView.as_view(), name='user-friend-groups'),
+
+    path('basic/info/', views.UserBasicInfoView.as_view(), name='user-basic-info'),
+    path('education/', views.UserEducationView.as_view(), name='user-education'),
+    path('interest/', views.UserInterestView.as_view(), name='user-interest'),
+    path('delete/interest/', views.RemoveInterest.as_view(), name='remove-interest'),
+    path('add/interest/', views.AddInterest.as_view(), name='add-interest'),
+    path('profile/photo/<int:pk>/', views.ProfilePhotoView.as_view(), name='user-profile-photo'),
+    path('cover/photo/<int:pk>/', views.CoverPhotoView.as_view(), name='user-cover-photo'),
 ]

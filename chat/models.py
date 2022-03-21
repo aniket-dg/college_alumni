@@ -2,6 +2,8 @@ from django.db import models
 
 
 # Create your models here.
+
+
 class UploadedMedia(models.Model):
     media = models.FileField()
     is_valid = models.BooleanField(default=False)
@@ -54,6 +56,12 @@ class GroupChatModel(models.Model):
     admin = models.ManyToManyField('users.User', blank=True, related_name='group_admin')
     created_by = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='group_created_by_user')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    member_count = models.IntegerField(default=0)
+    def get_profile_img(self):
+        if self.profile_image:
+            return self.profile_image.url
+        return ''
 
 
     def __str__(self):

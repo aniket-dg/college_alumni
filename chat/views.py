@@ -47,6 +47,7 @@ def arrange_users(users):
             account_dict[item[0][0]].append(user)
     return account_dict
 
+
 class HomeView(View):
     def get(self, *args, **kwargs):
         context = {}
@@ -67,6 +68,7 @@ class HomeView(View):
 
         return render(self.request, 'chat/chat-direct.html', context)
 
+
 class GroupCreateView(CreateView):
     model = GroupChatModel
     form_class = GroupCreateForm
@@ -76,6 +78,7 @@ class GroupCreateView(CreateView):
         user = self.request.user
         group = form.instance
         group.created_by = user
+        group.member_count = 1
         group.save()
         today = datetime.now().date()
         group.save()
@@ -93,11 +96,15 @@ class GroupCreateView(CreateView):
                 user = User.objects.filter(id=int(id)).last()
                 user.groups.add(group)
                 user.save()
+                group.member_count = group.member_count + 1
+                group.save()
         return redirect('chat:chat')
+
 
 class GroupUpdateView(View):
     def get(self, *args, **kwargs):
         return HttpResponse("Group Update")
+
 
 class LoadMoreRemainingUsers(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
@@ -125,6 +132,7 @@ class LoadMoreRemainingUsers(LoginRequiredMixin, View):
             result[key] = user_list
         return JsonResponse({'users': result})
 
+
 class ReadUnReadMessage(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         sender_id = self.kwargs.get('pk')
@@ -147,6 +155,7 @@ class ReadUnReadMessage(LoginRequiredMixin, View):
             'status': False,
             'error': 'Sender does not exist!'
         })
+
 
 class ReadGroupUnReadMessage(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
@@ -171,6 +180,7 @@ class ReadGroupUnReadMessage(LoginRequiredMixin, View):
             'error': 'Sender does not exist!'
         })
 
+
 class UnSeenMessageViewAPI(generics.ListAPIView):
     serializer_class = P2pChatModelSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -191,7 +201,7 @@ class GroupUnSeenMessageViewAPI(generics.ListAPIView):
         group_chat_id = self.kwargs.get('pk')
         group = GroupChatModel.objects.filter(id=group_chat_id).last()
         if group:
-            chats = GroupChat.objects.filter(group=group).exclude(user_read__in = [self.request.user])
+            chats = GroupChat.objects.filter(group=group).exclude(user_read__in=[self.request.user])
             return chats
         return None
 
@@ -229,6 +239,7 @@ class DeleteSenderChatMessageSelf(LoginRequiredMixin, View):
             'error': 'Message not found'
         })
 
+
 class DeleteReceiveChatMessage(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         chat_id = self.kwargs.get('pk')
@@ -244,7 +255,6 @@ class DeleteReceiveChatMessage(LoginRequiredMixin, View):
             'status': False,
             'error': 'Message not found'
         })
-
 
 
 class DeleteCombineMessage(LoginRequiredMixin, View):
@@ -287,7 +297,6 @@ class ClearAllChat(LoginRequiredMixin, View):
             'status': False,
             'error': 'Message not found'
         })
-
 
 
 class DeleteSenderGroupChatMessage(LoginRequiredMixin, View):
@@ -367,6 +376,7 @@ class DeleteCombineGroupMessage(LoginRequiredMixin, View):
             'error': 'Message not Found!'
         })
 
+
 class DeleteReceiveGroupChatMessage(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         chat_id = self.kwargs.get('pk')
@@ -409,4 +419,83 @@ class GroupMemberListView(View):
             })
         return JsonResponse({
             "error": "Group not exist."
+        })
+
+
+class AddMemberToGroupView(View):
+    def get(self, *args, **kwargs):
+        group = GroupChatModel.objects.filter(id=self.request.GET.get('pk')).last()
+        if not group:
+            return JsonResponse({
+                'error': "Group not exist!",
+            })
+        if self.request.user not in group.admin.all():
+            return JsonResponse({
+                'error': 'Only admin can add member to group',
+            })
+        user_ids = self.request.GET.getlist('user_ids[]')
+        users = User.objects.filter(id__in=user_ids)
+        for user in users:
+            # Creator is not counted in total group members size
+            user.groups.add(group)
+            group.member_count = group.member_count + 1
+            group.save()
+            user.save()
+        return JsonResponse({
+            'data': 'Member(s) added to Group.'
+        })
+
+
+class RemoveFromGroupView(View):
+    def get(self, *args, **kwargs):
+        group_id = self.kwargs.get('group_id')
+        user_id = self.kwargs.get('user_id')
+        group = GroupChatModel.objects.filter(id=group_id).last()
+        user = User.objects.filter(id=user_id).last()
+
+        if not group:
+            return JsonResponse({
+                'error': "Group not exist",
+            })
+        if not self.request.user == group.created_by:
+            return JsonResponse({
+                'error': 'Only Group creator can remove member from group',
+            })
+        if group not in user.groups.all():
+            return JsonResponse({
+                'error': 'User doesn\'t belongs to group.',
+            })
+
+        user.groups.remove(group)
+        group.member_count = group.member_count - 1
+        group.save()
+        user.save()
+        return JsonResponse({
+            'data': 'User removed from group',
+        })
+
+
+class LeaveFromGroup(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        group_id = self.kwargs.get('group_id')
+        user_id = self.kwargs.get('user_id')
+        group = GroupChatModel.objects.filter(id=group_id).last()
+        user = User.objects.filter(id=user_id).last()
+
+        if not group:
+            return JsonResponse({
+                'error': "Group not exist",
+            })
+        if group not in user.groups.all():
+            return JsonResponse({
+                'error': 'User doesn\'t belongs to group.',
+            })
+        user.groups.remove(group)
+        user.save()
+        group.member_count = group.member_count - 1
+        group.save()
+        group_chat = GroupChat(group=group, user=user, body=f"{user.email} left.")
+        group_chat.save()
+        return JsonResponse({
+            'data': 'User left group',
         })

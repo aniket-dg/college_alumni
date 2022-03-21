@@ -1,0 +1,450 @@
+{% load static %}
+<html>
+    <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+
+<script>
+    function createPost(posts)
+    {
+        posts.forEach(post => {
+            let html = `
+        <div class="central-meta item" id="post${post.post_id}">
+									<div class="user-post">
+										<div class="friend-info">
+											<figure>
+												<img src="${post.profile}" alt="">
+											</figure>
+											<div class="friend-name">
+												<ins><a href="time-line.html" title="">${post.user}</a></ins>
+												<span>published: ${post.timestamp}</span>
+											</div>
+											<div class="post-meta">
+
+												<img src="${post.image1}" alt="">
+
+												<div class="description">
+
+													<p>
+														${post.description}
+													</p>
+												</div>
+<div class="we-video-info">
+													<ul>
+														<li>
+															<a onclick="like('` + post.post_id + `', '{{request.user}}')" class="like" data-toggle="tooltip" title="like">
+																<i class="ti-heart"></i>
+																<ins id="total-likes-${post.post_id}">${post.likes}</ins>
+															</a>
+														</li>
+
+														<li>
+															<span class="comment" data-toggle="tooltip" title="Comments">
+																<i class="fa fa-comments-o"></i>
+																<ins id="total-comments-${post.post_id}">${post.comments}</ins>
+															</span>
+														</li>
+
+														<li class="social-media">
+															<div class="menu">
+															  <div class="btn trigger"><i class="fa fa-share-alt"></i></div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-html5"></i></a></div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-facebook"></i></a></div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-google-plus"></i></a></div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-twitter"></i></a></div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-css3"></i></a></div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-instagram"></i></a>
+																</div>
+															  </div>
+																<div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-dribbble"></i></a>
+																</div>
+															  </div>
+															  <div class="rotater">
+																<div class="btn btn-icon"><a href="#" title=""><i class="fa fa-pinterest"></i></a>
+																</div>
+															  </div>
+
+															</div>
+														</li>
+													</ul>
+												</div>
+											</div>
+										</div>
+										<div class="coment-area">
+											<ul class="we-comet" id="we-comet-${post.post_id}">
+
+												<li>
+													<a onclick="moreComments(${post.post_id})" id="more-comments-${post.post_id}" title="" class="showmore underline">more comments</a>
+												</li>
+                                                <li id="no-comments-${post.post_id}" style="display: none">
+                                                        No more Comments!
+                                                </li>
+												<li class="post-comment">
+													<div class="comet-avatar">
+														<img src="images/resources/comet-1.jpg" alt="">
+													</div>
+													<div class="post-comt-box">
+														<form method="post">
+															<textarea placeholder="Post your comment" id="comment${post.post_id}" name="comment${post.post_id}"></textarea>
+															<div class="add-smiles">
+																<button  id="comment-submit-btn-${post.post_id}" type="button" onclick="postComment('${post.post_id}')"  title="add icon"><span class="em em-expressionless"></span></button>
+															</div>
+															<div class="smiles-bunch">
+																<i class="em em---1"></i>
+																<i class="em em-smiley"></i>
+																<i class="em em-anguished"></i>
+																<i class="em em-laughing"></i>
+																<i class="em em-angry"></i>
+																<i class="em em-astonished"></i>
+																<i class="em em-blush"></i>
+																<i class="em em-disappointed"></i>
+																<i class="em em-worried"></i>
+																<i class="em em-kissing_heart"></i>
+																<i class="em em-rage"></i>
+																<i class="em em-stuck_out_tongue"></i>
+															</div>
+															<button type="submit"></button>
+														</form>
+													</div>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</div>
+        `;
+
+            $('#postBlock').append(html);
+            moreComments(post.post_id);
+        });
+    }
+
+
+
+    {################   Image Processing    ###########}
+    function blobCreationFromURL(dataURI) {
+        const splitDataURI = dataURI.split(',')
+        const byteString = splitDataURI[0].indexOf('base64') >= 0 ? atob(splitDataURI[1]) : decodeURI(splitDataURI[1])
+        const mimeString = splitDataURI[0].split(':')[1].split(';')[0]
+
+        const ia = new Uint8Array(byteString.length)
+        for (let i = 0; i < byteString.length; i++)
+            ia[i] = byteString.charCodeAt(i)
+
+        return new Blob([ia], {
+            type: mimeString
+        })
+    }
+
+    function getBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function mediaFiles() {
+        $('#media-input').attr('disabled', true);
+            const file = document.querySelector('#media-input').files;
+        Array.from(file).forEach(element => {
+            getBase64(element).then(
+                data => $("#feed-upload").append(`
+                    <div class="upload-wrap">
+                        <img src="` + data + `">
+                        <span class="remove-file">
+                            <svg onclick="$(this).parent().parent().remove(); enableInput();" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18">
+                                </line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </span>
+                    </div>
+                `)
+            );
+        });
+    }
+    function enableInput()
+    {
+        $('#media-input').removeAttr('disabled');
+    }
+    {################  End Image Processing    ###########}
+
+    function postSubmit() {
+        $('#submit-post').prop('disabled', true);
+        var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+        var data = new FormData();
+        data.append("csrfmiddlewaretoken", csrfmiddlewaretoken);
+        data.append("category", $("#category").val());
+        data.append("description", $("#description").val());
+        $('#feed-upload').children().each(function () {
+            var blobObject = blobCreationFromURL($(this).children("img").attr('src'));
+            data.append("images", blobObject);
+        });
+        console.log(data);
+        $.ajax({
+            type: "POST",
+            url: "{% url 'post:post' %}",
+            data: data,
+            enctype: 'multipart/form-data',
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                if (response['Status'] === true) {
+                    console.log("POst created");
+                    document.getElementById("post_error").style.display = "none";
+                    location.reload();
+                } else {
+                    console.log(response);
+                    document.getElementById("post_error").style.display = "block";
+<!--                    alert(response['Message']);-->
+                }
+            },
+            error: function (response) {
+                console.log(response);
+            },
+        });
+    }
+
+
+
+    function morePost()
+    {
+        console.log("More function called");
+        let user_id = "{{ profile_user.id }}";
+        currentPosts = $('.central-meta').length-1;
+        $.ajax({
+            async: true,
+            method: "GET",
+            url: "{% url 'post:load-more-post' %}",
+            data: {
+                'current_posts': currentPosts,
+                'user_id': user_id,
+                'self_post': true
+            },
+            success: function (response) {
+                $('#load-more').removeClass('loading');
+                    if (response.Status == false) {
+                        $('#load-more-post-btn').css('display', 'none');
+                        {#$('#no-post-tag').css('display', 'block');#}
+                    } else {
+                        createPost(response.posts);
+                        $('#load-more-post-btn').css('display', 'block');
+
+                    }
+            },
+            error: function (response) {
+                console.log(response);
+            },
+        });
+    }
+
+
+function moreComments(post_id, type='post')
+    {
+        $("#comment-text-action" + post_id).css({
+            display: "none"
+        });
+        $('#comments-wrap' + post_id).removeClass('is-hidden');
+        $('#content-wrap' + post_id).addClass('is-hidden');
+
+        currentComments = $(`#we-comet-${post_id} .we-comment`).length;
+        $.ajax({
+            async: true,
+            method: "GET",
+            url: "{% url 'post:load-more-comments' %}",
+            data: {
+                'post_id': post_id,
+                'current_comments': currentComments,
+                'type': type,
+            },
+            success: function (response) {
+                console.log(response);
+                    if (response.Status == false) {
+                        $(`#more-comments-${post_id}`).css('display', 'none');
+                        $(`#no-comments-${post_id}`).css('display', 'block');
+                    } else {
+                        createComment(post_id,response.comments);
+                    }
+            },
+        })
+    }
+
+    function postComment(id, type='post') {
+        var formData = new FormData();
+        $(`#comment-submit-btn-${id}`).prop('disabled', true);
+        var comment = $("textarea[name='comment" + id + "']").val();
+        if (comment === "") {
+            $("#comment-text-action" + id).css({
+                display: "block"
+            });
+        } else {
+            $("#comment-text-action" + id).css({
+                display: "none"
+            });
+            formData.append('csrfmiddlewaretoken', $("input[name='csrfmiddlewaretoken']").val());
+            formData.append('id', id);
+            formData.append('comment', comment);
+            formData.append('type', type)
+            $.ajax({
+                type: "POST",
+                url: "{% url 'post:comment' %}",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    console.log(response);
+                    if (response['status'] === false) {
+                        alert(response['Message']);
+                    }
+                    $("textarea[name='comment" + id + "']").val("");
+		            let current = $(`#total-comments-${id}`).text();
+                     current = parseInt(current);
+
+                    $(`#total-comments-${id}`).text(current + 1);
+                    getSingleComment(id);
+                    $(`#comment-submit-btn-${id}`).prop('disabled', false);
+
+                },
+                error: function (response) {
+                    alert(response['Message']);
+                },
+            });
+        }
+    }
+
+    function getSingleComment(id)
+    {
+        $.ajax({
+            async: true,
+            method: "GET",
+            url: "{% url 'post:get-single-comment' %}",
+            data: {
+                'post_id': id,
+            },
+            success: function (response) {
+                    response.comments.forEach(data =>
+            {
+
+            if (data.user_profile === '') {
+                    var profile = "{% static 'social_assets/img/avatars/dan.jpg' %}";
+                } else {
+                    var profile = window.location.origin + data.user_profile;
+                }
+                let comment_div = $('#we-comet-'+data.post_id);
+                comment_div.prepend(
+                    `<li>
+													<div class="comet-avatar">
+														<img src="${profile}" alt="">
+													</div>
+													<div class="we-comment">
+														<div class="coment-head">
+															<h5><a href="time-line.html" title="">${data.post_user}</a></h5>
+															<span>${data.timestamp}</span>
+														</div>
+														<p>${data.comment}
+														</p>
+													</div>
+												</li>`
+                    );
+        }
+        );
+            },
+        })
+    }
+
+    function createComment(id, comments)
+    {
+        comments.forEach(data =>
+            {
+            if (data.user_profile === '') {
+                    var profile = "{% static 'social_assets/img/avatars/dan.jpg' %}";
+                } else {
+                    var profile = window.location.origin + data.user_profile;
+                }
+                let comment_div = $('#we-comet-'+data.post_id);
+                comment_div.prepend(
+                    `<li>
+													<div class="comet-avatar">
+														<img src="${profile}" alt="">
+													</div>
+													<div class="we-comment">
+														<div class="coment-head">
+															<h5><a href="time-line.html" title="">${data.post_user}</a></h5>
+															<span>${data.timestamp}</span>
+														</div>
+														<p>${data.comment}
+														</p>
+													</div>
+												</li>`
+                    );
+        }
+        );
+    }
+
+
+
+    function like(id, user) {
+        var csrfmiddlewaretoken = $("input[name='csrfmiddlewaretoken']").val();
+        if ($('#like-button' + id).hasClass('is-active')) {
+            $('#like-button' + id).removeClass('is-active');
+        } else {
+            $('#like-button' + id).addClass('is-active');
+        }
+        $.ajax({
+            async: true,
+            method: "POST",
+            url: "{% url 'post:like' %}",
+            data: {
+                csrfmiddlewaretoken: csrfmiddlewaretoken,
+                'id': id,
+                'user': user
+            },
+            success: function (response) {
+                console.log("post liked by user");
+                $('#total-likes-' + id).html(response['likes']);
+            },
+            error: function (response) {
+                console.log(response);
+            },
+        });
+    }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    $(document).ready(function () {
+        morePost();
+
+    });
+
+
+</script>
+
+</html>

@@ -1,0 +1,35 @@
+<div class="col-lg-3">
+								<aside class="sidebar static">
+
+                                    <div class="widget ">
+										<h4 class="widget-title">Profile intro</h4>
+										<ul class="short-profile">
+											<li>
+												<span>about me</span>
+												<p>{{ profile_user.get_user_about_me }}</p>
+											</li>
+											<li>
+												<span>College Name</span>
+												<p>{{ profile_user.get_college_name }}</p>
+											</li>
+											<li>
+												<span>Branch & Year</span>
+												<p>{{ profile_user.get_college_branch }}&nbsp;,<strong> {{ profile_user.get_college_year }}</strong></p>
+											</li>
+                                            <li>
+												<span>Email</span>
+												<p>
+                                                    {% if profile_user in request.user.get_user_connected_users or profile_user == request.user %}
+                                                        {{ profile_user.email }}
+                                                    {% else %}
+                                                        <label class="control-label" for="input"><a href="" class="__cf_email__" data-cfemail="6c29010d05002c">[Email&#160;protected]</a></label><i class="mtrl-select"></i>
+                                                    {% endif %}
+                                                </p>
+											</li>
+										</ul>
+									</div><!-- profile intro widget -->
+
+
+
+								</aside>
+							</div><!-- sidebar -->

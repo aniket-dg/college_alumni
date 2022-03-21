@@ -1,10 +1,147 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+	<title>MahaSIG</title>
+    <link rel="icon" href="{% static 'images/logo.gif' %}" type="image/png" sizes="16x16">
+
+    <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/color.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+
 </head>
 <body>
-{{ form }}
+<!--<div class="se-pre-con"></div>-->
+<div class="theme-layout">
+	<div class="container-fluid pdng0">
+		<div class="row merged">
+			<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+				<div class="land-featurearea">
+					<div class="land-meta">
+                        <img src="{% static 'images/logo.gif' %}">
+						<h1>MahaSIG</h1>
+						<p>
+							MahaSIG is the portal where Student, Industries and Government
+engaged for interaction, self-employment and job
+opportunities.
+						</p>
+
+						<a href="#" title="" class="folow-me">Follow Us on</a>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+				<div class="login-reg-bg">
+					<div class="log-reg-area sign">
+						<h2 class="log-title">Login</h2>
+							<p>
+								Don’t use MahaSIG Yet? <a href="#" title="">Take the tour</a> or Login now
+							</p>
+						<form method="post" action="{% url 'user:login' %}">
+                            {% csrf_token %}
+							<div class="form-group">
+							  <input type="text" id="input" required="required" name="email"/>
+							  <label class="control-label" for="input">Email</label><i class="mtrl-select"></i>
+							</div>
+							<div class="form-group">
+							  <input type="password" required="required" name="password"/>
+							  <label class="control-label" for="input">Password</label><i class="mtrl-select"></i>
+							</div>
+							<div class="checkbox">
+							  <label>
+								<input type="checkbox" checked="checked"/><i class="check-box"></i>Always Remember Me.
+							  </label>
+							</div>
+							<a href="#" title="" class="forgot-pwd">Forgot Password?</a>
+							<div class="submit-btns">
+                                <button type="submit" class="mtr-btn"><span>Login</span></button>
+								<button class="mtr-btn signup" type="button"><span>Register</span></button>
+							</div>
+						</form>
+					</div>
+					<div class="log-reg-area reg">
+						<h2 class="log-title">Register</h2>
+							<p>
+                                Don't you register on <strong>MahaSIG</strong> Yet? <a href="#" title="">Take the tour</a> or Register now.
+							</p>
+						<form method="post" id="registerForm" name="registerForm" action="{% url 'user:register' %}">
+                            {% csrf_token %}
+							<div class="form-group">
+							  <input type="text" required="required" name="first_name"/>
+							  <label class="control-label" for="input">First Name</label><i class="mtrl-select"></i>
+							</div>
+                            <div class="form-group">
+							  <input type="text" required="required" name="last_name"/>
+							  <label class="control-label" for="input">Last Name</label><i class="mtrl-select"></i>
+							</div>
+							<div class="form-group">
+							  <input type="text" required="required" name="username"/>
+							  <label class="control-label" for="input">User Name</label><i class="mtrl-select"></i>
+							</div>
+							<div class="form-group">
+							  <input type="password" required="required" name="password1"/>
+							  <label class="control-label" for="input">Password</label><i class="mtrl-select"></i>
+							</div>
+                            <div class="form-group">
+							  <input type="password" required="required" name="password2" />
+							  <label class="control-label" for="input">Repeat Password</label><i class="mtrl-select"></i>
+							</div>
+							  <label>Choose User Type</label>
+                            <div class="form-radio">
+                                <div class="radio">
+								<label>
+								  <input type="radio" name="user_type" value="student" checked="checked"/><i class="check-box"></i>Student
+								</label>
+							  </div>
+							  <div class="radio">
+								<label>
+								  <input type="radio" name="user_type" value="college"/><i class="check-box"></i>College
+								</label>
+							  </div>
+                                <div class="radio">
+								<label>
+								  <input type="radio" name="user_type" value="industry" /><i class="check-box"></i>Industry
+								</label>
+							  </div>
+							</div>
+							<div class="form-group">
+							  <input type="text" required="required" name="email"/>
+							  <label class="control-label" for="input"><a href="https://wpkixx.com/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c29010d05002c">[Email&#160;protected]</a></label><i class="mtrl-select"></i>
+							</div>
+                            <div class="form-group">
+							  <input type="text" required="required" name="phone_number"/>
+							  <label class="control-label" for="input"><a href="https://wpkixx.com/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c29010d05002c">[Contact Number&#160;protected]</a></label><i class="mtrl-select"></i>
+							</div>
+                            <div class="form-group">
+							  <label class="label" for="input">Official Document to verify identity</label>
+							  <input type="file" required="required" name="uploaded_file" />
+							</div>
+							<div class="checkbox">
+							  <label>
+								<input type="checkbox" checked="checked"/><i class="check-box"></i>Accept Terms & Conditions ?
+							  </label>
+							</div>
+							<a href="#" title="" class="already-have">Already have an account</a>
+							<div class="submit-btns">
+                                <button type="submit" class="mtr-btn"><span>Register</span></button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+    	<script src="{% static 'js/main.min.js' %}"></script>
+
+	<script src="{% static 'js/script.js' %}"></script>
+
 </body>
+
 </html>

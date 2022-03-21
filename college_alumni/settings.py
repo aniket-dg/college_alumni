@@ -19,6 +19,10 @@ INSTALLED_APPS = [
     'channels',  # Channels for chat
     'users',
     'chat',
+    'post',
+    'analytics',
+    'college',
+    'industry',
 ]
 
 MIDDLEWARE = [
