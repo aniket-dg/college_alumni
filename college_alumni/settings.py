@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'channels',  # Channels for chat
     'users',
     'chat',
@@ -73,7 +74,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -107,5 +108,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+FAST_SMS_API = "jOuMb6YyyCojQDHuKjRNMUNUOpiM2mnuezcE7Goo8499sYSn2f0YFOaJAGVD"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

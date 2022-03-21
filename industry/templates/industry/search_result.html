@@ -1,0 +1,233 @@
+{% extends 'analytics/base.html' %}
+{% load static %}
+{% block content %}
+ <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div class="row">
+              <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light"></span> Search Results</h4>
+
+              <div class="card">
+
+                <h5 class="card-header">Users&nbsp; &nbsp;&nbsp;</h5>
+              <form id="optform" method="post">
+              {% csrf_token %}
+        <div class="all_member" id="all_member"></div>
+
+                  <div class="table-responsive text-nowrap">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <button type="button" onclick="generatePDF()" class="btn  btn-primary">Generate PDF</button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" onclick="generateExcel()" class="btn btn-primary">Generate Excel</button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCenter">Send Message</button>
+                        </div>
+
+                    </div>
+                  <div class="col-lg-4 col-md-6">
+                      <div class="mt-3">
+                        <!-- Button trigger modal -->
+
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="modalCenterTitle">Send bulk message to selected users!</h5>
+                                <button
+                                  type="button"
+                                  class="btn-close"
+                                  data-bs-dismiss="modal"
+                                  aria-label="Close"
+                                ></button>
+                              </div>
+                              <div class="modal-body">
+                                <div class="row">
+                                  <div class="col mb-3">
+                                    <label for="nameWithTitle" class="form-label">Message Data</label>
+                                    <textarea
+                                      type="text"
+                                      id="nameWithTitle"
+                                      class="form-control"
+                                      name="message"
+                                      placeholder="Enter your message here.........."
+                                    ></textarea>
+                                  </div>
+                                </div>
+
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                  Close
+                                </button>
+                                <button type="button" onclick="sendSMS()" class="btn btn-primary">Save changes</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <script>
+                      function generateExcel()
+                      {
+                          $('#optform').attr('action', "{% url 'college:generate-excel-list' %}");
+                          $('#optform').submit();
+                      }
+                      function generatePDF()
+                      {
+                          $('#optform').attr('action', "{% url 'college:generate-pdf-list' %}");
+                          $('#optform').submit();
+                      }
+                      function sendSMS()
+                      {
+                          $('#optform').attr('action', "{% url 'college:send-sms-user-list' %}");
+                          $('#optform').submit();
+                      }
+                  </script>
+                  <table class="table mt-3">
+
+                    <thead>
+                      <tr>
+
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Branch</th>
+                        <th>College Name</th>
+{#                        <th>Actions</th>#}
+                        <th><input id="select-all" style="width: 16px; height: 16px; vertical-align: middle;" type="checkbox" name="check"></th>
+                      </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                    {% for item in object_list %}
+                      <tr>
+
+                        <td><a href="{% url 'college:user-detail' item.id %}"><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>{{ item.get_full_name }}</strong></a></td>
+                        <td>{{ item.username }}</td>
+                        <td>{{ item.education.branch }}
+                        </td>
+                        <td><span class="badge bg-label-primary me-1">
+                            <strong class="text-success">{{ item.education.college.name }}</strong>
+                            </span></td>
+{#                        <td>#}
+{#                             <a class="dropdown-item" {% if not item.is_verified %}href="{% url 'college:approve-user' item.id %}"{% endif %}#}
+{#                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>#}
+{#                       </td>#}
+                      <td>
+                        <input class="filter_check1" style="width: 16px; height: 16px; vertical-align: middle;" type="checkbox" value="{{ item.id }}" name="filter_list[]" id="member_{{ item.id }}"></td>
+                      </tr>
+                    {% endfor %}
+{#                    <h1>Aniket {{ object_list }} {{ is_paginated }}</h1>#}
+                    {% if not object_list %}
+                    <tr><td colspan="5"><div class="row text-center mt-3 mb-3"><strong> <span>No Users Found!</span></strong></div></td></tr>
+                    {% endif %}
+                        {% if object_list and is_paginated%}
+
+
+                    <tr><td>
+                            <div class="demo-inline-spacing">
+                        <!-- Basic Pagination -->
+                        <nav aria-label="Page navigation">
+                          <ul class="pagination">
+                              {% if page_obj.has_previous %}
+                            <li class="page-item prev">
+                              <a class="page-link" href="?page={{ page_obj.previous_page_number }}"><i class="tf-icon bx bx-chevron-left"></i></a>
+                            </li>
+                              {% else %}
+
+                              {% endif %}
+
+                          {% if page_obj.number|add:'-4' > 1 %}
+                            <li class="page-item">
+                              <a class="page-link" href="?page={{ page_obj.number|add:'-5' }}">{{ page_obj.number|add:'-5' }}</a>
+                            </li>
+                          {% endif %}
+
+                          {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                            <li class="page-item active">
+                              <a class="page-link" href="javascript:void(0);">{{ i }}</a>
+                            </li>
+                          {% elif i > page_obj.number|add:'-5' and i < page_obj.number|add:'5' %}
+                            <li class="page-item">
+                              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                            </li>
+                          {% endif %}
+                          {% endfor %}
+
+                          {% if page_obj.paginator.num_pages > page_obj.number|add:'4' %}
+                            <li class="page-item">
+                              <a class="page-link" href="?page={{ page_obj.number|add:'5' }}">{{ page_obj.number|add:'5' }}</a>
+                            </li>
+                          {% endif %}
+
+                          {% if page_obj.has_next %}
+                            <li class="page-item next">
+                              <a class="page-link" href="?page={{ page_obj.next_page_number }}"><i class="tf-icon bx bx-chevron-right"></i></a>
+                            </li>
+                          {% endif %}
+{#                            <li class="page-item last">#}
+{#                              <a class="page-link" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-right"></i></a>#}
+{#                            </li>#}
+                          </ul>
+                        </nav>
+                        <!--/ Basic Pagination -->
+                      </div>
+                        </td></tr>
+                    {% endif %}
+
+
+                    </tbody>
+                  </table>
+                <script>
+            $(document).ready(function(){
+    $('#select-all').attr('checked',false);
+});
+	$("#select-all").click(function(){
+    	$('.filter_check1').not(this).prop('checked', this.checked);
+    	if($('.filter_check1:checked').length == $('.filter_check1').length) {
+            {% for object in member_list %}
+                $('#optform').append('<input class="filter_check1" style="width: 16px; height: 16px; vertical-align: middle;" type="hidden" value="{{ object.id }}" name="filter_list[]" id="next_member">');
+            {% endfor %}
+        }
+    	else
+    	{
+    	 $("input[id*=next_member]").remove();
+        }
+	});
+</script>
+                  <script>
+                    function generate_pdf(){
+                        var filter_list = $("input[name='filter_list[]']")
+              .map(function(){return $(this).val();}).get();
+                        $('#optform').submit();
+                    }
+                </script>
+
+                </div>
+
+              </form>
+
+
+              </div>
+<script>
+    function submitExcel()
+    {
+
+    }
+</script>
+              <hr class="my-5" />
+
+            </div>
+
+            <div class="content-backdrop fade"></div>
+                <script>
+                    $('#dashboard_list').addClass('active');
+                </script>
+
+
+
+{% endblock %}

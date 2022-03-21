@@ -116,7 +116,7 @@
                                                             </a>
                                                         </div> -->
                                                         <div class="avatar">
-<!--                                                            <img src="{{ request.user.profile_image.url }}" alt="#"  style="object-fit: cover;" class="avatar-img">-->
+<!--                                                            <img src="{{ request.user.get_profile_img }}" alt="#"  style="object-fit: cover;" class="avatar-img">-->
 <!--                                                            <img {% if object.profile_image %}src="{{ object.profile_image.url }}"{% endif %}  alt="#"  style="object-fit: cover; margin-left: -2rem;" class="avatar-img">-->
                                                             <img src="{{ object.profile_image.url }}" alt="#" style="object-fit: cover;" class="avatar-img">
                                                         </div>

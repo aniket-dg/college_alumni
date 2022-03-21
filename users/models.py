@@ -28,7 +28,7 @@ class UserBasic(models.Model):
     city = models.CharField(max_length=300)
     country = models.CharField(max_length=300)
     about_me = models.TextField(null=True, blank=True)
-    user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
+    # user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
 
 
 class BranchName(models.Model):
@@ -54,7 +54,7 @@ class UserEducation(models.Model):
     branch = models.CharField(max_length=300)
     current_status = models.TextField(null=True, blank=True)
     current_company = models.ForeignKey('industry.Company', null=True, blank=True, on_delete=models.SET_NULL)
-    user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
+    # user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
 
 
 class Interest(models.Model):
@@ -62,8 +62,9 @@ class Interest(models.Model):
 
 
 class UserInterest(models.Model):
+    time = models.DateTimeField(auto_now_add=True)
     interest = models.ManyToManyField(Interest, blank=True)
-    user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
+    # user = models.ForeignKey('users.User', blank=True, null=True, on_delete=models.SET_NULL)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -96,8 +97,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     is_basic_info = models.BooleanField(default=False)
+    user_basic = models.ForeignKey(UserBasic, null=True, blank=True, on_delete=models.SET_NULL)
     is_work_education = models.BooleanField(default=False)
+    education = models.ForeignKey(UserEducation, null=True, blank=True, on_delete=models.SET_NULL)
     is_interest = models.BooleanField(default=False)
+    user_interest = models.ForeignKey(UserInterest, null=True, blank=True, on_delete=models.SET_NULL)
 
     is_declined = models.BooleanField(default=False)
     reason_for_declined = models.TextField(null=True, blank=True)
@@ -138,6 +142,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.first_name
 
     def get_user_connected_users(self):
+        if self.is_superuser:
+            return User.objects.all().exclude(email=self.email)
+        if self.is_college_user() or self.is_industry_user():
+            return User.objects.filter(user_type='student').exclude(email=self.email)
+
         emails = [user.connection_user.email for user in self.connections.filter(send_request="Accepted")]
         pending_emails = [user.connection_user.email for user in
                           self.pending_connections.filter(send_request="Accepted")]
@@ -256,11 +265,22 @@ class User(AbstractBaseUser, PermissionsMixin):
         return False
 
     def is_college_user(self):
-        return self.user_type == 'college' and self.is_verified == True and self.is_active == True
+        return self.user_type == 'college' and self.is_verified and self.is_active
+
+    def is_industry_user(self):
+        return self.user_type == 'industry' and self.is_verified and self.is_active
 
     def get_college_obj(self):
         return CollegeName.objects.filter(college_users__in=[self]).last()
 
+    def get_user_education(self):
+        education = UserEducation.objects.filter(user=self).last()
+        return education
+
+    def get_uploaded_document(self):
+        if self.uploaded_document:
+            return self.uploaded_document.url
+        return ''
 
 class Connection(models.Model):
     connection_user = models.ForeignKey(User, on_delete=models.CASCADE)

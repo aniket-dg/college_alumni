@@ -271,8 +271,10 @@
 													<h4><a title="">{{ group.group_name }}</a></h4>
 {#													<span>public group</span>#}
 													<em>{{ group.member_count }} Members</em>
+                                                    {% if profile_user == request.user %}
 													<a href="{% url 'chat:leave-group' group.id request.user.id %}" title="" class="add-butn" data-ripple="">leave group</a>
-												</div>
+												    {% endif %}
+                                                </div>
 											</div>
 										</li>
 										{% endfor %}

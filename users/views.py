@@ -258,6 +258,19 @@ class AcceptUserRequest(LoginRequiredMixin, IsUserActive, View):
         })
 
 
+def make_friends(sender, receiver):
+    connection = Connection()
+    connection.connection_user = sender
+    connection.request = True
+    connection.send_request = "Accepted"
+    connection.save()
+    connection = Connection()
+    connection.connection_user = receiver
+    connection.request = True
+    connection.send_request = "Accepted"
+    connection.save()
+
+
 class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
     def get(self, *args, **kwargs):
         id = self.request.GET.get('id')
@@ -467,7 +480,8 @@ class UserGroupsView(LoginRequiredMixin, View):
         context['user'] = self.request.user
         return render(self.request, "users/groups.html", context)
 
-class UserFriendGroupsView(LoginRequiredMixin, CheckProfile,View):
+
+class UserFriendGroupsView(LoginRequiredMixin, CheckProfile, View):
     def get(self, *args, **kwargs):
         context = {}
         user = User.objects.filter(id=self.kwargs.get('pk')).last()
@@ -483,8 +497,8 @@ class UserBasicInfoView(LoginRequiredMixin, View):
         user = self.request.user
         context['user'] = user
         context['profile_user'] = user
-        context['basic_info_present'] = UserBasic.objects.filter(user=user).last()
-        context['basic_info'] = UserBasic.objects.filter(user=user).last()
+        context['basic_info_present'] = user.user_basic
+        context['basic_info'] = user.user_basic
         return render(self.request, "users/basic_info.html", context)
 
     def post(self, *args, **kwargs):
@@ -512,7 +526,9 @@ class UserBasicInfoView(LoginRequiredMixin, View):
                 user_basic.delete()
             user_basic = user_basic_form.instance
             user_basic.save()
-            user_basic.user = self.request.user
+            self.request.user.user_basic = user_basic
+            self.request.user.save()
+            # user_basic.user = self.request.user
             user_basic.about_me = user_basic.about_me.strip()
             user_basic.save()
             self.request.user.is_basic_info = True
@@ -532,8 +548,8 @@ class UserEducationView(LoginRequiredMixin, View):
         user = self.request.user
         context['user'] = user
         context['profile_user'] = user
-        context['education_present'] = UserEducation.objects.filter(user=user).last()
-        context['education_info'] = UserEducation.objects.filter(user=user).last()
+        context['education_present'] = self.request.user.education
+        context['education_info'] = self.request.user.education
         context['colleges'] = CollegeName.objects.all()
         context['branches'] = BranchName.objects.all()
         context['companies'] = Company.objects.all()
@@ -549,7 +565,8 @@ class UserEducationView(LoginRequiredMixin, View):
             print(user_education)
             education = user_education.instance
             education.save()
-            education.user = user
+            self.request.user.education = education
+            self.request.user.save()
             education.save()
             user.is_work_education = True
             user.save()
@@ -561,8 +578,8 @@ class UserEducationView(LoginRequiredMixin, View):
 
         context['error'] = True
         context['education_error'] = user_education
-        context['education_present'] = UserEducation.objects.filter(user=user).last()
-        context['education_info'] = UserEducation.objects.filter(user=user).last()
+        context['education_present'] = self.request.user.education
+        context['education_info'] = self.request.user.education
         context['colleges'] = CollegeName.objects.all()
         context['branches'] = BranchName.objects.all()
         context['companies'] = Company.objects.all()
@@ -574,7 +591,7 @@ class UserInterestView(LoginRequiredMixin, View):
         context = {}
         user = self.request.user
         context['profile_user'] = user
-        context['interest_present'] = UserInterest.objects.filter(user=self.request.user).last()
+        context['interest_present'] = self.request.user.user_interest
         return render(self.request, 'users/interest.html', context)
 
     def post(self, *args, **kwargs):
@@ -602,7 +619,7 @@ class UserInterestView(LoginRequiredMixin, View):
 class RemoveInterest(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         name = self.request.GET.get('name')
-        user_interest = UserInterest.objects.filter(user=self.request.user).last()
+        user_interest = self.request.user.user_interest
         if not user_interest:
             return JsonResponse({
                 'error': "User Interest not found!"
@@ -622,10 +639,12 @@ class RemoveInterest(LoginRequiredMixin, View):
 class AddInterest(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         name = self.request.GET.get('name')
-        user_interest = UserInterest.objects.filter(user=self.request.user).last()
+        user_interest = self.request.user.user_interest
         if not user_interest:
-            user_interest = UserInterest(user=self.request.user)
+            user_interest = UserInterest()
             user_interest.save()
+            self.request.user.user_interest = user_interest
+            self.request.user.save()
         is_interest = user_interest.interest.filter(name=name).last()
         if is_interest:
             return JsonResponse({

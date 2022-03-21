@@ -1,0 +1,46 @@
+{% load static %}
+<html>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+
+{% for object in object_list %}
+<div class="container my-5 px-4 py-5 border" style="page-break-before: always">
+
+
+    <!-- <h2 align="center" class="py-2 font-weight-bold">Member Detail</h2><hr> -->
+
+    <div class="row">
+        <div class="col-6"><p align="right"><img src="{% if object.get_profile_img %}{{object.get_profile_img}}{% endif %}" width="100px" height="100px"></p></div>
+    </div>
+
+
+
+    <h4 class="font-weight-bolder pt-3">Student Information</h4>
+    <br>
+    <div class="row">
+        <div class="col-6"><p><strong>Name:&nbsp;</strong>{{ object.get_full_name }}</p></div>
+        <div class="col-6"><strong>Email:&nbsp;</strong>{{ object.email }}</div>
+    </div>
+    <div class="row">
+        <div class="col-6"><p><strong>DOB</strong>: &nbsp;{{ object.user_basic.dob|date:'d M, Y' }}</p></div>
+        <div class="col-6"><strong>Phone Number: </strong> &nbsp;{{ object.phone_number }}</div>
+    </div>
+    <div class="row">
+        <div class="col-6"><p><strong>Branch:</strong> &nbsp;{% if object.education.branch %}{{ object.education.branch  }}{% else %}-{% endif %}</p></div>
+        <div class="col-6"><strong>City:</strong> &nbsp;{{ object.user_basic.city }}</div>
+    </div>
+    <div class="row">
+        <div class="col-6"><p><strong>Admission Year:</strong> &nbsp;{{ object.education.admission_year }}</p></div>
+        <div class="col-6"><strong>Passout Year:&nbsp;</strong>{{ object.eduction.passout_year }}</div>
+    </div>
+    <div class="row">
+        <div class="col-12"><p><strong>Current Status:&nbsp;</strong>{{ object.education.current_status }}</p></div>
+    </div>
+    <div class="row">
+        <div class="col-6"><strong>Current City:</strong> &nbsp;{{ object.education.current_city }}</div>
+        <div class="col-6"><p><strong>Current Company:</strong> &nbsp;{{ object.education.current_company.name }}</p></div>
+    </div>
+
+
+</div>
+{% endfor %}
+</html>

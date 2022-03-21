@@ -149,7 +149,7 @@
                             </div>
                         </a>
                     </li>
-
+                {% if request.user.user_type == "student" %}
                     <!-- Friends -->
                     <li class="nav-item">
                         <a class="nav-link py-0 py-lg-8" id="tab-friends" href="#tab-content-friends" title="Friends" data-bs-toggle="tab" role="tab">
@@ -158,7 +158,7 @@
                             </div>
                         </a>
                     </li>
-
+                {% endif %}
                     <!-- Chats -->
                     <li class="nav-item">
                         <a class="nav-link active py-0 py-lg-8" id="tab-chats" href="#tab-content-chats" title="Chats" data-bs-toggle="tab" role="tab">
@@ -217,7 +217,7 @@
 
                     <!-- Friends -->
                 {% include 'chat/tab_content_friends.html' %}
-
+{#                {% endif %}#}
                     <!-- Chats -->
                 {% include 'chat/tab_content_chats.html' %}
 
