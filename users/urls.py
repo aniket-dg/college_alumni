@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
     path('profile/', views.UserProfileView.as_view(), name='profile'),
+    path('', views.UserProfileView.as_view(), name='profile'),
     path('friend/list/<int:pk>/', views.UserUserFriendView.as_view(), name='user-user-friend'),
     path('update/<int:pk>/', views.UserUpdateView.as_view(), name='update'),
     path('resend-confirmation/', views.ResendMailConfirmationView.as_view(),
