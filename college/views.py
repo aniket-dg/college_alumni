@@ -27,7 +27,12 @@ class IsCollegeUser:
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_college_user():
             return super().dispatch(request, *args, **kwargs)
-        return redirect('post:post')
+        elif request.user.is_industry_user():
+            return redirect('industry:home')
+        elif request.user.is_superuser:
+            return redirect('analytics:home')
+        messages.warning(request, "Unauthorized Access!")
+        return redirect('profile')
 
 
 class HomeView(LoginRequiredMixin, IsCollegeUser, View):
@@ -254,7 +259,7 @@ class SearchResult(LoginRequiredMixin, IsCollegeUser, ListView):
         return context
 
 
-class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class GenerateExcelToFilterUser(LoginRequiredMixin, IsCollegeUser, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
 
         ids = self.request.POST.getlist('filter_list[]')
@@ -319,7 +324,7 @@ class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class GeneratePdfToFilterUser(LoginRequiredMixin,  IsCollegeUser,UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         ids = self.request.POST.getlist('filter_list[]')
         ids = list(set(ids))
@@ -349,7 +354,7 @@ class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
         return False
 
 
-class SendSMSToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class SendSMSToFilterUser(LoginRequiredMixin, IsCollegeUser, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         redirect_url = self.request.META.get('HTTP_REFERER')
         ids = self.request.POST.getlist('filter_list[]')

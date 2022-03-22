@@ -84,7 +84,7 @@ class PostIndex(LoginRequiredMixin, View):
         })
 
 
-class LoadMorePost(View):
+class LoadMorePost(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         self_post = self.request.GET.get('self')
         user_id = self.request.GET.get('user_id')
@@ -146,7 +146,7 @@ class LoadMorePost(View):
             })
         return JsonResponse({'posts': posts})
 
-class LoadMoreComments(View):
+class LoadMoreComments(LoginRequiredMixin ,View):
     def get(self, *args, **kwargs):
         post_id = self.request.GET.get('post_id')
         post = Post.objects.filter(id=post_id).last()
@@ -185,7 +185,7 @@ class LoadMoreComments(View):
             'comments': comments
         })
 
-class PostComments(View):
+class PostComments(LoginRequiredMixin, View):
     """
     :param request:
         authenticated_user, post-id, form-data,
@@ -234,7 +234,7 @@ class PostComments(View):
         comment.save()
         return JsonResponse({'status': True, 'id': post.id, 'type': 'post'})
 
-class GetComment(View):
+class GetComment(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         post_id = self.request.GET.get('post_id')
         post = Post.objects.filter(id=post_id).last()

@@ -60,7 +60,7 @@ class IsUserActive:
             return redirect('profile')
 
 
-class UserProfileView(IsBasicInfoFill, View):
+class UserProfileView(LoginRequiredMixin,IsBasicInfoFill, View):
     def get(self, *args, **kwargs):
         context = {}
         user = self.request.user
@@ -79,7 +79,7 @@ class UserProfileView(IsBasicInfoFill, View):
         return render(self.request, 'users/profile.html', context)
 
 
-class UserUserFriendView(IsBasicInfoFill, View):
+class UserUserFriendView(LoginRequiredMixin, IsBasicInfoFill, View):
     def get(self, *args, **kwargs):
         context = {}
         user = User.objects.filter(id=self.kwargs.get('pk')).last()
@@ -234,7 +234,7 @@ class LoginView(SuccessMessageMixin, FormView):
 
 
 # User logout view
-class LogoutView(View):
+class LogoutView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         logout(self.request)
         self.request.session.flush()
@@ -471,7 +471,7 @@ class UsersAndPostsSearchView(LoginRequiredMixin, View):
         })
 
 
-class UnfriendUser(View):
+class UnfriendUser(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         redirect_url = self.request.META.get('HTTP_REFERER')
         user_friend_id = self.kwargs.get('pk')
@@ -925,7 +925,7 @@ class ResendMailConfirmationView(SuccessMessageMixin, FormView):
             return redirect('login')
 
 
-class SampleView(View):
+class SampleView(LoginRequiredMixin,View):
     def get(self, request):
         user = User.objects.get(email='royalaniket2512@gmail.com')
         send_activation_mail(request, "Sample message",user)

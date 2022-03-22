@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-m3z4#d+o62gs#mq$5unaohu7*k9j8qax#jrh-v@yza@79py^=1
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['40.76.87.127']
+ALLOWED_HOSTS = ['40.76.87.127', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -111,7 +111,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FAST_SMS_API = "jOuMb6YyyCojQDHuKjRNMUNUOpiM2mnuezcE7Goo8499sYSn2f0YFOaJAGVD"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+LOGIN_URL = "login"
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True

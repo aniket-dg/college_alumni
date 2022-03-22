@@ -28,10 +28,16 @@ class IsSuperAdmin:
         user = request.user
         if user.is_active and user.is_verified and user.is_staff:
             return super().dispatch(request, *args, **kwargs)
-        raise PermissionDenied
+        elif user.is_college_user():
+            return redirect("college:home")
+        elif user.is_industry_user():
+            return redirect("industry:home")
+        messages.warning(request, "Unauthorized access!")
+        return redirect('profile')
+        # raise PermissionDenied
 
 
-class HomeView(LoginRequiredMixin, View):
+class HomeView(LoginRequiredMixin, IsSuperAdmin,View):
     def get(self, *args, **kwargs):
         context = {}
         user = self.request.user
@@ -253,7 +259,8 @@ class ApproveCollegeUser(LoginRequiredMixin, IsSuperAdmin, View):
             return redirect(redirect_url)
         return redirect('analytics:home')
 
-class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+
+class GenerateExcelToFilterUser(LoginRequiredMixin, IsSuperAdmin, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
 
         ids = self.request.POST.getlist('filter_list[]')
@@ -316,9 +323,8 @@ class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
         return False
 
 
-
 @method_decorator(csrf_exempt, name='dispatch')
-class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class GeneratePdfToFilterUser(LoginRequiredMixin, IsSuperAdmin, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         ids = self.request.POST.getlist('filter_list[]')
         ids = list(set(ids))
@@ -348,7 +354,7 @@ class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
         return False
 
 
-class SendSMSToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class SendSMSToFilterUser(LoginRequiredMixin, IsSuperAdmin, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         redirect_url = self.request.META.get('HTTP_REFERER')
         ids = self.request.POST.getlist('filter_list[]')
@@ -356,7 +362,7 @@ class SendSMSToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
         ids = list(set(ids))
         object_list = []
         for item in ids:
-            user = User.objects.filter(id =int(item)).last()
+            user = User.objects.filter(id=int(item)).last()
             print(user)
             if user:
                 object_list.append(user)

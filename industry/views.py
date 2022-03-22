@@ -25,7 +25,12 @@ class IsIndustryUser:
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_industry_user():
             return super().dispatch(request, *args, **kwargs)
-        return redirect('post:post')
+        elif request.user.is_superuser:
+            return redirect('analytics:home')
+        elif request.user.is_college_user():
+            return redirect('college:home')
+        messages.warning(request, "Unauthorized Access!")
+        return redirect('profile')
 
 
 class HomeView(LoginRequiredMixin, IsIndustryUser, View):
@@ -142,7 +147,7 @@ class IndustryUserList(LoginRequiredMixin, IsIndustryUser, ListView):
         return context
 
 
-class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class GenerateExcelToFilterUser(LoginRequiredMixin,  IsIndustryUser,UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
 
         ids = self.request.POST.getlist('filter_list[]')
@@ -215,7 +220,7 @@ class GenerateExcelToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class GeneratePdfToFilterUser(LoginRequiredMixin, IsIndustryUser, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         ids = self.request.POST.getlist('filter_list[]')
         ids = list(set(ids))
@@ -246,7 +251,7 @@ class GeneratePdfToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
         return False
 
 
-class SendSMSToFilterUser(LoginRequiredMixin, UserPassesTestMixin, View):
+class SendSMSToFilterUser(LoginRequiredMixin, IsIndustryUser, UserPassesTestMixin, View):
     def post(self, *args, **kwargs):
         redirect_url = self.request.META.get('HTTP_REFERER')
         ids = self.request.POST.getlist('filter_list[]')
@@ -291,7 +296,7 @@ def send_sms(request, message, phone_number):
     if response[1] == 'true':
         return True
 
-class SampleView(LoginRequiredMixin, View):
+class SampleView(LoginRequiredMixin, IsIndustryUser, View):
     def get(self, *args, **kwargs):
         context = {}
         context['object_list'] = User.objects.all()

@@ -12,7 +12,13 @@
 				<li><a href="{% url 'profile' %}" title="">Friends</a></li>
 				<li><a href="{% url 'user-groups' %}" title="">Groups</a></li>
 				<li><a href="{% url 'user-timeline' %}" title="">Timeline</a></li>
-
+                {% if request.user.is_college_user %}
+				<li><a href="{% url 'college:home' %}" title="">Dashboard</a></li>
+				{% elif request.user.is_industry_user %}
+                <li><a href="{% url 'industry:home' %}" title="">Dashboard</a></li>
+				{% elif request.user.is_superuser %}
+                <li><a href="{% url 'analytics:home' %}" title="">Dashboard</a></li>
+                {% endif %}
 			</ul>
             <ul class="setting-area">
 				<li>

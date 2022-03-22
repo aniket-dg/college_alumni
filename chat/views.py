@@ -48,7 +48,7 @@ def arrange_users(users):
     return account_dict
 
 
-class HomeView(View):
+class HomeView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         context = {}
         user = self.request.user
@@ -69,7 +69,7 @@ class HomeView(View):
         return render(self.request, 'chat/chat-direct.html', context)
 
 
-class GroupCreateView(CreateView):
+class GroupCreateView(LoginRequiredMixin,CreateView):
     model = GroupChatModel
     form_class = GroupCreateForm
 
@@ -101,7 +101,7 @@ class GroupCreateView(CreateView):
         return redirect('chat:chat')
 
 
-class GroupUpdateView(View):
+class GroupUpdateView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         return HttpResponse("Group Update")
 
@@ -394,7 +394,7 @@ class DeleteReceiveGroupChatMessage(LoginRequiredMixin, View):
         })
 
 
-class GroupMemberListView(View):
+class GroupMemberListView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         group = GroupChatModel.objects.filter(id=self.kwargs.get('pk')).last()
         if group and group in self.request.user.groups.all():
@@ -422,7 +422,7 @@ class GroupMemberListView(View):
         })
 
 
-class AddMemberToGroupView(View):
+class AddMemberToGroupView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         group = GroupChatModel.objects.filter(id=self.request.GET.get('pk')).last()
         if not group:
@@ -446,7 +446,7 @@ class AddMemberToGroupView(View):
         })
 
 
-class RemoveFromGroupView(View):
+class RemoveFromGroupView(LoginRequiredMixin,View):
     def get(self, *args, **kwargs):
         group_id = self.kwargs.get('group_id')
         user_id = self.kwargs.get('user_id')
