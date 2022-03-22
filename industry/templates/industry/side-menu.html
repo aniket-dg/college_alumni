@@ -1,7 +1,7 @@
 {% load static %}
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
           <div class="app-brand demo">
-            <a href="{% url 'college:home' %}" class="app-brand-link">
+            <a href="{% url 'industry:home' %}" class="app-brand-link">
               <span class="app-brand-logo demo">
                 <img src="{% static 'images/logo_1.gif' %}">
               </span>
@@ -19,7 +19,7 @@
           <ul class="menu-inner py-1">
             <!-- Dashboard -->
             <li class="menu-item" id="dashboard_list">
-              <a href="{% url 'college:home' %}" class="menu-link">
+              <a href="{% url 'industry:home' %}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div data-i18n="Analytics">Dashboard</div>
               </a>
@@ -27,23 +27,23 @@
 
 
             <li class="menu-item" id="approve_user_list">
-              <a href="{% url 'college:user-list' %}" class="menu-link">
+              <a href="{% url 'industry:user-list' %}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user-check"></i>
                 <div data-i18n="Analytics">User List</div>
               </a>
             </li>
 
-              <li class="menu-item" id="unapprove_user_list">
-              <a href="{% url 'college:unapprove-user-list' %}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-user-x"></i>
-                <div data-i18n="Analytics">Inactive User List</div>
-              </a>
-            </li>
-
+{#              <li class="menu-item" id="unapprove_user_list">#}
+{#              <a href="{% url 'college:unapprove-user-list' %}" class="menu-link">#}
+{#                <i class="menu-icon tf-icons bx bx-user-x"></i>#}
+{#                <div data-i18n="Analytics">Inactive User List</div>#}
+{#              </a>#}
+{#            </li>#}
+{#<h1>{{ request.user.get_industry_obj }}</h1>#}
               <li class="menu-item" id="college_info_list">
-              <a href="{% url 'college:info' request.user.get_college_obj.id %}" class="menu-link">
+              <a href="{% url 'industry:info' request.user.get_industry_obj.id %}" class="menu-link">
                 <i class="menu-icon tf-icons bx bxs-school"></i>
-                <div data-i18n="Analytics">College Info</div>
+                <div data-i18n="Analytics">Industry Info</div>
               </a>
             </li>
 

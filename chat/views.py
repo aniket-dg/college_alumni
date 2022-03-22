@@ -126,7 +126,7 @@ class LoadMoreRemainingUsers(LoginRequiredMixin, View):
                     'id': user.id,
                     'name': user.get_full_name(),
                     'username': user.username,
-                    'profile': reverse('user:friend-profile', kwargs={'pk': user.id}),
+                    'profile': reverse('friend-profile', kwargs={'pk': user.id}),
                     'profile_img': user.get_profile_img(),
                 })
             result[key] = user_list

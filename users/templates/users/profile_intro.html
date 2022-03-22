@@ -8,14 +8,34 @@
 												<span>about me</span>
 												<p>{{ profile_user.get_user_about_me }}</p>
 											</li>
+                                        {% if request.user.is_college_user_profile %}
 											<li>
 												<span>College Name</span>
 												<p>{{ profile_user.get_college_name }}</p>
 											</li>
-											<li>
-												<span>Branch & Year</span>
-												<p>{{ profile_user.get_college_branch }}&nbsp;,<strong> {{ profile_user.get_college_year }}</strong></p>
+                                        {% elif request.user.is_industry_user_profile %}
+                                            <li>
+												<span>Industry Name</span>
+												<p>{{ profile_user.get_industry_obj.name }}</p>
 											</li>
+                                            {% else %}
+                                            <li>
+												<span>Full Name</span>
+												<p>{{ profile_user.get_full_name }}</p>
+											</li>
+                                        {% endif %}
+                                        {% if request.user.is_college_user_profile %}
+											<li>
+												<span>Url</span>
+												<p>{{ request.user.get_college_obj.website }}&nbsp;</p>
+											</li>
+                                        {% endif %}
+                                        {% if request.user.is_industry_user_profile  %}
+                                        <li>
+											<span>Url</span>
+												<p>{{ request.user.get_industry_obj.website }}&nbsp;</p>
+											</li>
+                                        {% endif %}
                                             <li>
 												<span>Email</span>
 												<p>
@@ -28,8 +48,5 @@
 											</li>
 										</ul>
 									</div><!-- profile intro widget -->
-
-
-
-								</aside>
+                               </aside>
 							</div><!-- sidebar -->

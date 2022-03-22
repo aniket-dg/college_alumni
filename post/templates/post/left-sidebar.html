@@ -5,19 +5,19 @@
 										<ul class="naves">
 											<li>
 												<i class="ti-comments-smiley"></i>
-												<a href="messages.html" title="">Messages</a>
+												<a href="{% url 'chat:chat' %}" title="">Messages</a>
 											</li>
 											<li>
 												<i class="ti-user"></i>
-												<a href="timeline-friends.html" title="">Profile</a>
+												<a href="{% url 'user-basic-info' %}" title="">Profile</a>
 											</li>
 											<li>
 												<i class="ti-share"></i>
-												<a href="people-nearby.html" title="">Friends</a>
+												<a href="{% url 'profile' %}" title="">Friends</a>
 											</li>
 											<li>
 												<i class="ti-power-off"></i>
-												<a href="landing.html" title="">Logout</a>
+												<a href="{% url 'logout' %}" title="">Logout</a>
 											</li>
 										</ul>
 									</div><!-- Shortcuts -->

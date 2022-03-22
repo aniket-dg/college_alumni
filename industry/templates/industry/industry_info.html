@@ -1,0 +1,96 @@
+{% extends 'analytics/base.html' %}
+{% load static %}
+{% block content %}
+ <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div class="row">
+            <div class="col-md-12">
+                  <div class="card mb-4">
+                    <h5 class="card-header">Industry Info</h5>
+                      <form method="post" action="{% url 'industry:info' object.id %}" enctype="multipart/form-data">
+                          {% csrf_token %}
+                    <div class="card-body">
+{#                      <span class="text-info"><strong>Note: </strong>All fields are not necessary to filter result</span><br>#}
+                     <div class="row">
+                     <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Industry Name</label>
+                        <input type="text" class="form-control" name="name" id="exampleFormControlInput1" placeholder="" value="{{ industry_info.name }}">
+                      </div>
+                          <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Industry</label>
+                        <input type="text" class="form-control" name="industry" id="exampleFormControlInput1" placeholder="" value="{{ industry_info.industry }}">
+                      </div>
+
+
+                     </div>
+                     <div class="mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">About us</label>
+                         <textarea class="form-control" name="about_us" id="exampleFormControlTextarea1" rows="15">{% if industry_info.about_us %}{{ industry_info.about_us }}{% endif %}</textarea>
+                      </div>
+
+                     <div class="row">
+                         <div class="col mb-3">
+
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">Industry Logo</label>
+                        <input class="form-control" type="file" name="profile_image" id="profileImage">
+                        </div>
+{#                      <div class="row">#}
+                        <div class="col mb-3">
+                        <img id="previewProfileImage" height="186px" width="182px"  {% if industry_info.profile_image %}src="{{ industry_info.profile_image.url }}" {% endif %} class="img-rounded" alt="College Logo">
+                        </div>
+                        <script>
+                            function readNewImage(input)
+                            {
+                                if (input.files && input.files[0]) {
+                                var reader = new FileReader();
+
+                                reader.onload = function (e) {
+                                $('#previewProfileImage').attr('src', e.target.result);
+                                }
+                                reader.readAsDataURL(input.files[0]);
+                                }
+                            }
+                            $('#profileImage').change(function(){
+                                readNewImage(this);
+                            });
+                        </script>
+                     </div>
+                    <div class="row">
+                      <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInputPlain1" class="form-label">Company Size</label>
+                        <input class="form-control" type="text"  id="exampleFormControlReadOnlyInput1" {% if industry_info.company_size %}value="{{ industry_info.company_size }}" {% endif %}  name="company_size">
+                      </div>
+                            <div class="col mb-3">
+                        <label for="exampleFormControlSelect1" class="form-label">Website Url</label>
+                        <input type="text" class="form-control" name="website" {% if industry_info.website %}value="{{ industry_info.website }}" {% endif %} id="exampleFormControlInput1" placeholder="">
+                      </div>
+                    </div>
+
+
+                    <div class="row">
+                      <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInputPlain1" class="form-label">Specialites</label>
+                        <input class="form-control" type="text" id="exampleFormControlReadOnlyInput1" {% if industry_info.specialities %}value="{{ industry_info.specialities }}" {% endif %}  name="specialities">
+                      </div>
+                            <div class="col mb-3">
+                        <label for="exampleFormControlSelect1" class="form-label">Headquarters</label>
+                        <input type="text" class="form-control" name="headquarters" {% if industry_info.headquarters %}value="{{ industry_info.headquarters }}" {% endif %} id="exampleFormControlInput1" placeholder="">
+                      </div>
+                    </div>
+
+
+
+                        <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                        </div>
+                          </form>
+                </div>
+        </div>
+
+<script>
+                    $('#college_info_list').addClass('active');
+                </script>
+            <div class="content-backdrop fade"></div>
+{% endblock %}

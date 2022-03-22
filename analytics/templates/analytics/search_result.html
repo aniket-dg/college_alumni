@@ -74,17 +74,17 @@
                   <script>
                       function generateExcel()
                       {
-                          $('#optform').attr('action', "{% url 'industry:generate-excel-list' %}");
+                          $('#optform').attr('action', "{% url 'analytics:generate-excel-list' %}");
                           $('#optform').submit();
                       }
                       function generatePDF()
                       {
-                          $('#optform').attr('action', "{% url 'industry:generate-pdf-list' %}");
+                          $('#optform').attr('action', "{% url 'analytics:generate-pdf-list' %}");
                           $('#optform').submit();
                       }
                       function sendSMS()
                       {
-                          $('#optform').attr('action', "{% url 'industry:send-sms-user-list' %}");
+                          $('#optform').attr('action', "{% url 'analytics:send-sms-user-list' %}");
                           $('#optform').submit();
                       }
                   </script>
@@ -96,8 +96,8 @@
                         <th>Name</th>
                         <th>Username</th>
                         <th>Branch</th>
-                        <th>College Name</th>
-{#                        <th>Actions</th>#}
+                        <th>Status</th>
+                        <th>Actions</th>
                         <th><input id="select-all" style="width: 16px; height: 16px; vertical-align: middle;" type="checkbox" name="check"></th>
                       </tr>
                     </thead>
@@ -105,17 +105,21 @@
                     {% for item in object_list %}
                       <tr>
 
-                        <td><a href="{% url 'industry:user-detail' item.id %}"><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>{{ item.get_full_name }}</strong></a></td>
+                        <td><a href="{% url 'analytics:user-detail' item.id %}"><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>{{ item.get_full_name }}</strong></a></td>
                         <td>{{ item.username }}</td>
                         <td>{{ item.education.branch }}
                         </td>
-                        <td><span class="badge bg-label-primary me-1">
-                            <strong class="text-success">{{ item.education.college.name }}</strong>
-                            </span></td>
-{#                        <td>#}
-{#                             <a class="dropdown-item" {% if not item.is_verified %}href="{% url 'college:approve-user' item.id %}"{% endif %}#}
-{#                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>#}
-{#                       </td>#}
+                        <td><span class="badge bg-label-primary me-1">{% if item.is_verified %}
+                            <strong class="text-success">Active</strong>
+                            {% elif not item.is_verified and item.is_declined %}
+                                <strong class="text-danger">Disapproved</strong>
+                            {% else %}
+                                <strong class="text-info">Inactive</strong>
+                            {% endif %}</span></td>
+                        <td>
+                             <a class="dropdown-item" {% if not item.is_verified %}href="{% url 'college:approve-user' item.id %}"{% endif %}
+                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>
+                       </td>
                       <td>
                         <input class="filter_check1" style="width: 16px; height: 16px; vertical-align: middle;" type="checkbox" value="{{ item.id }}" name="filter_list[]" id="member_{{ item.id }}"></td>
                       </tr>

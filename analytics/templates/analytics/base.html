@@ -52,8 +52,14 @@
     <div class="layout-wrapper layout-content-navbar">
       <div class="layout-container">
         <!-- Menu -->
+        {% if request.user.is_superuser and request.user.is_staff %}
+            {% include 'analytics/side-menu.html' %}
+        {% elif request.user.is_college_user %}
+            {% include 'college/side-menu.html' %}
+        {% elif request.user.is_industry_user_profile %}
+            {% include 'industry/side-menu.html' %}
+        {% endif %}
 
-        {% include 'analytics/side-menu.html' %}
         <!-- / Menu -->
 
         <!-- Layout container -->
@@ -127,10 +133,17 @@
                       <div class="dropdown-divider"></div>
                     </li>
                     <li>
+                        {% if request.user.is_college_user %}
                       <a class="dropdown-item" href="{% url 'college:info' request.user.get_college_obj.id %}">
                         <i class="bx bx-user me-2"></i>
                         <span class="align-middle">College Profile</span>
                       </a>
+                            {% elif request.user.is_industry_user %}
+                            <a class="dropdown-item" href="{% url 'industry:info' request.user.get_industry_obj.id %}">
+                        <i class="bx bx-user me-2"></i>
+                        <span class="align-middle">Industry Profile</span>
+                      </a>
+                        {% endif %}
                     </li>
 
 
@@ -138,7 +151,7 @@
                       <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="{% url 'user:logout' %}">
+                      <a class="dropdown-item" href="{% url 'logout' %}">
                         <i class="bx bx-power-off me-2"></i>
                         <span class="align-middle">Log Out</span>
                       </a>

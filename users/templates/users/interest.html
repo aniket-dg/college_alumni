@@ -273,7 +273,7 @@
 
                                                `;
                                                $('#add-interest-id').append(html);
-                                               url = "{% url 'user:add-interest' %}";
+                                               url = "{% url 'add-interest' %}";
                                                value1 = seperate[data];
                                                $.ajax({
                                                    url : url,
@@ -295,7 +295,7 @@
                                         $(item).parent().remove();
                                         item_to_delete = $(item).parent().find('a')[0].innerHTML;
 
-                                        url = "{% url 'user:remove-interest' %}";
+                                        url = "{% url 'remove-interest' %}";
                                         $.ajax({
                                             url : url,
                                             data: {

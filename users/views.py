@@ -1,38 +1,53 @@
+from datetime import datetime, timedelta
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
 # Create your views here.
 from django.urls import reverse
+from django.utils.encoding import force_bytes, force_text
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views import View
 from django.views.generic import CreateView, FormView, UpdateView, DetailView
 
+from college.forms import CollegeBasicInfoForm
+from college.models import College
+from industry.forms import CompanyForm, CompanyProfilePhotoForm, CompanyCoverPhotoForm
 from industry.models import Company
 from post.models import Post, Category
 from users.forms import RegistrationForm, LoginForm, UserUpdateForm, ProfilePhotoForm, CoverPhotoForm, UserNameForm, \
-    UserBasicForm, UserEducationForm
+    UserBasicForm, UserEducationForm, EmailForm, CollegeCoverPhotoForm, CollegeProfilePhotoForm
 from users.models import User, Connection, UserBasic, UserEducation, CollegeName, BranchName, UserInterest, Interest
+from users.utils import account_activation_token, send_activation_mail
 
 
 class IsBasicInfoFill:
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_info_save():
+        if request.user.is_info_save() or request.user.is_superuser:
             return super().dispatch(request, *args, **kwargs)
         else:
             if not request.user.is_basic_info:
                 messages.info(request, "Please fill basic info first.")
-                return redirect('user:user-basic-info')
+                return redirect('user-basic-info')
+            if request.user.is_college_user_profile():
+                return super().dispatch(request, *args, **kwargs)
+            if request.user.is_industry_user_profile():
+                return super().dispatch(request, *args, **kwargs)
             elif not request.user.is_work_education:
                 messages.info(request, "Specify Education and work information")
-                return redirect('user:user-education')
+                return redirect('user-education')
             else:
                 messages.info(request, "Please tell about your Interest.")
-                return redirect('user:user-interest')
+                return redirect('user-interest')
 
 
 class IsUserActive:
@@ -42,7 +57,7 @@ class IsUserActive:
         else:
             if request.user.is_basic_info and request.user.is_work_education and request.user.is_interest:
                 messages.error(request, "Your account is not verified yet!")
-            return redirect('user:profile')
+            return redirect('profile')
 
 
 class UserProfileView(IsBasicInfoFill, View):
@@ -52,7 +67,8 @@ class UserProfileView(IsBasicInfoFill, View):
         context['post_list'] = Post.objects.filter(user=user)
         context['user'] = self.request.user
         context['profile_user'] = self.request.user
-        connected_users = user.get_user_connected_users()
+        connected_users = user.get_user_connected_users_profile()
+        print(connected_users, "Aniket")
         requested_users = user.get_user_requested_users()
         received_users = user.get_user_received_users()
         remaining_users = user.get_remaining_users()
@@ -69,11 +85,11 @@ class UserUserFriendView(IsBasicInfoFill, View):
         user = User.objects.filter(id=self.kwargs.get('pk')).last()
         if not user:
             messages.warning(self.request, "User not found")
-            return redirect('user:profile')
+            return redirect('profile')
         context['post_list'] = Post.objects.filter(user=user)
         context['user'] = user
         context['profile_user'] = user
-        connected_users = user.get_user_connected_users()
+        connected_users = user.get_user_connected_users_profile()
         requested_users = user.get_user_requested_users()
         received_users = user.get_user_received_users()
         remaining_users = user.get_remaining_users()
@@ -97,13 +113,13 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixi
         redirect_url = self.request.META.get('HTTP_REFERER')
         if redirect_url:
             return redirect(redirect_url)
-        return redirect('user:profile')
+        return redirect('profile')
 
     def form_invalid(self, form):
         redirect_url = self.request.META.get('HTTP_REFERER')
         if redirect_url:
             return redirect(redirect_url)
-        return redirect('user:profile')
+        return redirect('profile')
 
     def test_func(self):
         model = self.get_object()
@@ -112,24 +128,59 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixi
 
 class SignUpView(SuccessMessageMixin, CreateView):
     template_name = 'users/register.html'
-    success_url = '/user/login/'
+    success_url = '/users/login/'
     form_class = RegistrationForm
     success_message = "Your account was created successfully"
 
+    def get_context_data(self, **kwargs):
+        context = super(SignUpView, self).get_context_data(**kwargs)
+        context['signup_error'] = "true"
+        return context
+
     def form_valid(self, form):
         user = form.instance
-        user.is_active = False
-        user.is_verified = False
-        user.save()
         user_type = self.request.POST.get('user_type')
+        if user_type == "industry":
+            user.user_type = "industry"
+            # user.college_code = None
+            user.save()
+            message = 'Account successfully created Please click the link in your mail and login to active your ' \
+                      'account. '
+            send_activation_mail(self.request, message, user)
+            return super().form_valid(form)
+
+        college_code = self.request.POST.get('college_code')
+        if not college_code:
+            messages.warning(self.request, "Please specify College Code!")
+            return redirect('register')
+        college = College.objects.filter(code=college_code).last()
+        if not college:
+            messages.info(self.request, "College code not valid. If problem persist, contact to support!")
+            return redirect('register')
+
         if user_type == "college":
             user.user_type = "college"
-        elif user_type == "industry":
-            user.user_type = "industry"
+            user.college_code = college_code
+            user.save()
+            email = user.email
+            domain = email.split("@")[1]
+            if domain not in college.domain:
+                messages.warning(self.request, "Enter verifiable institute-issued email address")
+                return redirect('register')
         else:
             user.user_type = "student"
+        # user.is_active = False
+        # user.is_verified = False
+        user.college_code = college_code
         user.save()
+        user.save()
+        message = 'Account successfully created Please click the link in your mail and login to active your account.'
+        send_activation_mail(self.request, message, user)
         return super().form_valid(form)
+
+    # def form_invalid(self, form):
+    #     print(form.errors)
+    #     return HttpResponse("Error")
 
 
 # Login View
@@ -156,7 +207,7 @@ class LoginView(SuccessMessageMixin, FormView):
             user_query = User.objects.get(email=credentials['email'])
         except ObjectDoesNotExist:
             messages.warning(self.request, 'Email or Password is incorrect')
-            return redirect('user:login')
+            return redirect('login')
 
         if user is not None:
             if user.is_active:
@@ -166,19 +217,19 @@ class LoginView(SuccessMessageMixin, FormView):
                     return redirect(url_redirect)
                 if self.request.GET.get('next'):
                     return redirect(self.request.GET.get('next'))
-                return redirect('home:home')
+                return redirect('post:post')
             else:
                 messages.warning(self.request,
                                  'Your account is not active, check your mail for activation link or contact support!')
-                return redirect('user:login')
+                return redirect('login')
 
         if not user_query.is_active:
             messages.warning(self.request,
                              'Your account is not active, check your mail for activation link or contact support!')
-            return redirect('user:login')
+            return redirect('login')
         else:
             messages.warning(self.request, 'Email or Password is incorrect')
-            return redirect('user:login')
+            return redirect('login')
 
 
 # User logout view
@@ -204,7 +255,7 @@ class AcceptUserRequest(LoginRequiredMixin, IsUserActive, View):
             user_pending_connection.send_request = "Accepted"
             user_pending_connection.save()
             # messages.success(self.request, "Request accepted")
-            # return redirect('user:profile')
+            # return redirect('profile')
             extra = {
                 'title': 'Request accepted!',
                 'url': reverse('chat:chat')
@@ -218,7 +269,7 @@ class AcceptUserRequest(LoginRequiredMixin, IsUserActive, View):
                 'data': 'Request accepted!'
             })
         # messages.warning(self.request, "User not found")
-        # return redirect('user:profile')
+        # return redirect('profile')
         if redirect_url:
             messages.warning(self.request, "You did not receive a request from this user.")
             return redirect(redirect_url)
@@ -240,7 +291,7 @@ class AcceptUserRequest(LoginRequiredMixin, IsUserActive, View):
             user_pending_connection.send_request = "Accepted"
             user_pending_connection.save()
             # messages.success(self.request, "Request accepted")
-            # return redirect('user:profile')
+            # return redirect('profile')
             extra = {
                 'title': 'Request accepted!',
                 'url': reverse('chat:chat')
@@ -251,7 +302,7 @@ class AcceptUserRequest(LoginRequiredMixin, IsUserActive, View):
                 'data': 'Request accepted!'
             })
         # messages.warning(self.request, "User not found")
-        # return redirect('user:profile')
+        # return redirect('profile')
         return JsonResponse({
             'status': 'failure',
             'error': 'You did not receive a request from this user.'
@@ -293,7 +344,7 @@ class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
             user.save()
             extra = {
                 'title': 'New friend request!',
-                'url': reverse('user:profile')
+                'url': reverse('profile')
                 # 'icon': self.request.build_absolute_uri(user.get_profile_img()),
             }
             if redirect_url:
@@ -312,7 +363,7 @@ class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
                 'data': 'Already requested'
             })
         # messages.warning(self.request, "User not found")
-        # return redirect('user:profile')
+        # return redirect('profile')
 
         if redirect_url:
             messages.warning(self.request, "User not found")
@@ -342,7 +393,7 @@ class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
             user.save()
             extra = {
                 'title': 'New friend request!',
-                'url': reverse('user:profile')
+                'url': reverse('profile')
                 # 'icon': self.request.build_absolute_uri(user.get_profile_img()),
             }
             return JsonResponse({
@@ -355,7 +406,7 @@ class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
                 'data': 'Already requested'
             })
         # messages.warning(self.request, "User not found")
-        # return redirect('user:profile')
+        # return redirect('profile')
         return JsonResponse({
             'status': 'failure',
             'error': 'User not found.'
@@ -365,7 +416,7 @@ class SendUserRequest(LoginRequiredMixin, IsUserActive, View):
 class CheckProfile:
     def dispatch(self, request, *args, **kwargs):
         if request.user.id == self.kwargs.get('pk'):
-            return redirect('user:profile')
+            return redirect('profile')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -429,12 +480,12 @@ class UnfriendUser(View):
             messages.warning(self.request, "User not found")
             if redirect_url:
                 return redirect(redirect_url)
-            return redirect('user:profile')
+            return redirect('profile')
         if user_friend not in user.get_user_connected_users():
             messages.warning(self.request, "User not found")
             if redirect_url:
                 return redirect(redirect_url)
-            return redirect('user:profile')
+            return redirect('profile')
         if user_friend in user.get_user_connected_users() or user in user_friend.get_user_connected_users():
             user.connections.remove(*user.connections.filter(connection_user=user_friend))
             user.pending_connections.remove(*user.pending_connections.filter(connection_user=user_friend))
@@ -446,7 +497,7 @@ class UnfriendUser(View):
         messages.success(self.request, "User removed from your friend list")
         if redirect_url:
             return redirect(redirect_url)
-        return redirect('user:profile')
+        return redirect('profile')
 
 
 class UserTimeLineView(LoginRequiredMixin, IsUserActive, View):
@@ -465,7 +516,7 @@ class UserFriendTimeLineView(LoginRequiredMixin, IsUserActive, View):
         user = User.objects.filter(id=self.kwargs.get('pk')).last()
         if not user:
             messages.warning(self.request, "User not found")
-            return redirect('user:user-timeline')
+            return redirect('user-timeline')
         context['category'] = Category.objects.all()
         context['user'] = user
         context['profile_user'] = user
@@ -486,7 +537,7 @@ class UserFriendGroupsView(LoginRequiredMixin, CheckProfile, View):
         context = {}
         user = User.objects.filter(id=self.kwargs.get('pk')).last()
         if not user:
-            return redirect('user:user-groups')
+            return redirect('user-groups')
         context['profile_user'] = user
         return render(self.request, "users/groups.html", context)
 
@@ -536,11 +587,52 @@ class UserBasicInfoView(LoginRequiredMixin, View):
 
         messages.success(self.request, "User info updated")
         if not self.request.user.is_work_education:
-            return redirect('user:user-education')
+            return redirect('user-education')
         if not self.request.user.is_interest:
-            return redirect('user:user-interest')
-        return redirect('user:profile')
+            return redirect('user-interest')
+        return redirect('profile')
 
+
+class CollegeBasicInfo(LoginRequiredMixin, UserPassesTestMixin,UpdateView):
+    model = CollegeName
+    form_class = CollegeBasicInfoForm
+
+    def form_valid(self, form):
+        college_info = form.instance
+        college_info.save()
+        self.request.user.is_basic_info = True
+        self.request.user.save()
+        messages.success(self.request, "College Info updated")
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_college_obj()
+
+class IndustryBasicInfo(LoginRequiredMixin, UserPassesTestMixin,UpdateView):
+    model = Company
+    form_class = CompanyForm
+
+    def form_valid(self, form):
+        college_info = form.instance
+        college_info.save()
+        self.request.user.is_basic_info = True
+        self.request.user.save()
+        messages.success(self.request, "Industry Info updated")
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def form_invalid(self, form):
+        context = {}
+        context['form'] = form
+        return render(self.request, 'users/basic_info.html', context)
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_industry_obj()
 
 class UserEducationView(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
@@ -573,8 +665,8 @@ class UserEducationView(LoginRequiredMixin, View):
             messages.success(self.request, "Education and work info saved successfully!")
             if not user.is_interest:
                 messages.info(self.request, "Please specify about your interest")
-                return redirect('user:user-interest')
-            return redirect('user:user-education')
+                return redirect('user-interest')
+            return redirect('user-education')
 
         context['error'] = True
         context['education_error'] = user_education
@@ -613,7 +705,7 @@ class UserInterestView(LoginRequiredMixin, View):
         #     self.request.user.is_interest = True
         #     self.request.user.save()
         messages.success(self.request, "User interest saved!")
-        return redirect('user:user-interest')
+        return redirect('user-interest')
 
 
 class RemoveInterest(LoginRequiredMixin, View):
@@ -671,7 +763,38 @@ class ProfilePhotoView(LoginRequiredMixin, UpdateView):
         user.save()
         if redirect_url:
             return redirect(redirect_url)
-        return redirect('user:profile')
+        return redirect('profile')
+
+
+class CollegeProfilePhotoView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = CollegeName
+    form_class = CollegeProfilePhotoForm
+
+    def form_valid(self, form):
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        user = form.instance
+        user.save()
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_college_obj()
+
+class IndustryProfilePhotoView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Company
+    form_class = CompanyProfilePhotoForm
+
+    def form_valid(self, form):
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        user = form.instance
+        user.save()
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_industry_obj()
 
 
 class CoverPhotoView(LoginRequiredMixin, UpdateView):
@@ -679,10 +802,149 @@ class CoverPhotoView(LoginRequiredMixin, UpdateView):
     form_class = CoverPhotoForm
 
     def form_valid(self, form):
+        user = self.request.user
         print(self.request.POST)
         redirect_url = self.request.META.get('HTTP_REFERER')
         user = form.instance
         user.save()
         if redirect_url:
             return redirect(redirect_url)
-        return redirect('user:profile')
+        return redirect('profile')
+
+
+class CollegeCoverPhotoView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = CollegeName
+    form_class = CollegeCoverPhotoForm
+
+    def form_valid(self, form):
+        user = self.request.user
+        print(self.request.POST)
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        user = form.instance
+        user.save()
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_college_obj()
+
+class IndustryCoverPhotoView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Company
+    form_class = CompanyCoverPhotoForm
+
+    def form_valid(self, form):
+        user = self.request.user
+        print(self.request.POST)
+        redirect_url = self.request.META.get('HTTP_REFERER')
+        user = form.instance
+        user.save()
+        if redirect_url:
+            return redirect(redirect_url)
+        return redirect('profile')
+
+    def test_func(self):
+        return self.get_object() == self.request.user.get_industry_obj()
+
+
+# Verifying email on link click
+class EmailVerificationView(View):
+    def get(self, request, uidb64, token):
+        try:
+            pk = force_text(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=pk)
+
+            if not account_activation_token.check_token(user, token):
+                return redirect('login' + '?message=' + 'User already activated')
+
+            if user.is_active:
+                return redirect('login')
+            user.is_active = True
+            user.save()
+
+            if user.user_type == "college":
+                college = College.objects.filter(code=user.college_code).last()
+                if college:
+                    CollegeName.objects.create(name=college.name)
+            if user.user_type == "industry":
+                industry = Company()
+                industry.save()
+                industry.user = user
+                industry.save()
+            messages.success(request, 'Account activated successfully')
+            return redirect('login')
+
+        except Exception as ex:
+            pass
+
+        return redirect('login')
+
+
+# Resend Mail
+class ResendMailConfirmationView(SuccessMessageMixin, FormView):
+    form_class = EmailForm
+    template_name = 'users/resend_mail.html'
+    success_url = '/'
+
+    def form_valid(self, form):
+        # Get the user
+        credentials = form.cleaned_data
+        try:
+            user = User.objects.get(email=credentials['email'])
+        except ObjectDoesNotExist:
+            messages.warning(self.request, 'Email is not correct')
+            return redirect('resend-email-confirmation')
+
+        # Check if user is active and send mail
+        now = datetime.now()
+        before_10_min = now + timedelta(minutes=-10)
+        if not user.is_active:
+            if user.date_confirmation_mail_sent > before_10_min:
+                message = \
+                    'Verification mail was just sent few minutes ago please check you mail or wait to resend again'
+                messages.warning(self.request, message)
+                return redirect('resend-email-confirmation')
+            message = 'Verification Mail Resend!, Please click the link in your mail and login to active \
+                       your account.'
+            user.date_confirmation_mail_sent = now
+            user.save()
+            send_activation_mail(self.request, message, user)
+            messages.success(self.request, 'Verification mail sent successfully')
+            return redirect('login')
+        else:
+            messages.info(self.request, 'User is already active. Please Login!')
+            return redirect('login')
+
+
+class SampleView(View):
+    def get(self, request):
+        user = User.objects.get(email='royalaniket2512@gmail.com')
+        send_activation_mail(request, "Sample message",user)
+        return HttpResponse("Email sent")
+        message = "Sample email"
+        current_site = get_current_site(request)
+        email_body = {
+            # 'user': user,
+            'domain': current_site.domain,
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': account_activation_token.make_token(user),
+        }
+
+        link = reverse('activate', kwargs={'uidb64': email_body['uid'], 'token': email_body['token']})
+
+        activate_url = 'http://' + current_site.domain + link
+
+        email_subject = 'Welcome to '
+        email_body_message = 'Please click the link and login to active your account'
+        email_body = 'Hi ' + user.get_full_name() + ', ' + email_body_message + '. \n\n <a href=' + \
+                     activate_url + '>activate</a>'
+
+        email = EmailMessage(
+            email_subject,
+            email_body,
+            settings.AUTH_USER_MODEL,
+            [user.email],
+        )
+        email.content_subtype = "html"
+        email.send(fail_silently=False)
+        messages.success(request, message)

@@ -26,6 +26,7 @@ class PostIndex(LoginRequiredMixin, View):
         context = {}
         context['post'] = []
         context['category'] = Category.objects.all()
+        context['profile_user'] = self.request.user
         return render(self.request, 'post/feeds.html', context)
 
     def post(self, *args, **kwargs):
@@ -94,7 +95,7 @@ class LoadMorePost(View):
             else:
                 p = Paginator(Post.objects.all(), 10)
         else:
-            p = Paginator(Post.objects.all(), 2)
+            p = Paginator(Post.objects.all(), 10)
 
         if not self.request.GET.get('current_posts'):
             current_status = 0
@@ -110,10 +111,10 @@ class LoadMorePost(View):
         posts = []
         for post in new_posts:
 
-            if not post.user.profile_image:
+            if not post.user.get_profile_img():
                 profile = "https://e7.pngegg.com/pngimages/798/436/png-clipart-computer-icons-user-profile-avatar-profile-heroes-black.png"
             else:
-                profile = post.user.profile_image.url
+                profile = post.user.get_profile_img()
             try:
                 image1 = post.image1.url
             except ValueError:

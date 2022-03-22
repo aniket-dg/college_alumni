@@ -4,8 +4,11 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils.translation import gettext_lazy as _
 
-from users.models import User, UserBasic, UserEducation
+from users.models import User, UserBasic, UserEducation, CollegeName
 
+
+class EmailForm(forms.Form):
+    email = forms.CharField(label='email')
 
 class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -15,6 +18,7 @@ class RegistrationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super(RegistrationForm, self).__init__(*args, **kwargs)
         self.fields['uploaded_document'].required = True
+        self.fields['college_code'].required = False
 
     def clean(self):
         super(RegistrationForm, self).clean()
@@ -32,6 +36,16 @@ class CoverPhotoForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['cover_image']
+
+class CollegeCoverPhotoForm(forms.ModelForm):
+    class Meta:
+        model = CollegeName
+        fields = ['cover_image']
+
+class CollegeProfilePhotoForm(forms.ModelForm):
+    class Meta:
+        model = CollegeName
+        fields = ['profile_image']
 
 class LoginForm(forms.Form):
     email = forms.CharField(label='email')

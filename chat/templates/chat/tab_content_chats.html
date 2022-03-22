@@ -65,7 +65,7 @@
                                             `{{ request.user.get_profile_img|default_if_none:''|escapejs }}`,
                                             `{{ object.get_full_name }}`,
                                             `{{ object.phone_number }}`,
-                                            `{% url 'user:friend-profile' object.id %}`,
+                                            `{% url 'friend-profile' object.id %}`,
                                             `{{object.designation|default_if_none:''|escapejs}}`,
                                             `{{object.bio|default_if_none:''|escapejs}}`)"
                                             class="card border-0 text-reset">

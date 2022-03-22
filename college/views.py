@@ -100,7 +100,7 @@ class CollegeApproveUserList(LoginRequiredMixin, IsCollegeUser, ListView):
 class CollegeUserList(LoginRequiredMixin, IsCollegeUser, ListView):
     model = User
     template_name = 'college/college_user_list.html'
-    paginate_by = 2
+    paginate_by = 20
 
     def get_queryset(self):
         college = self.request.user.get_college_obj()
@@ -140,8 +140,8 @@ class CollegeUserDetailView(LoginRequiredMixin, IsCollegeUser, UserPassesTestMix
 
     def get_context_data(self, **kwargs):
         context = super(CollegeUserDetailView, self).get_context_data(**kwargs)
-        context['user_basic'] = UserBasic.objects.filter(user=self.get_object()).last()
-        context['user_education'] = UserEducation.objects.filter(user=self.get_object()).last()
+        context['user_basic'] = self.get_object().user_basic
+        context['user_education'] = self.get_object().education
         return context
     # def get_queryset(self):
     #     return is_college_student(self.request, self.object)
@@ -205,6 +205,7 @@ class UnapproveCollegeUser(LoginRequiredMixin, IsCollegeUser, View):
         if is_college_student(self.request, user):
             user.is_declined = True
             user.reason_for_declined = reason
+            user.is_verified = False
             user.save()
             messages.success(self.request, "User deactivated successfully!")
             return redirect('college:user-detail', pk=self.kwargs.get('pk'))

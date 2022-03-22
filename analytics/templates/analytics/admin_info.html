@@ -29,11 +29,11 @@
                          <div class="col mb-3">
 
                         <label for="exampleFormControlReadOnlyInput1" class="form-label">College Logo</label>
-                        <input class="form-control" type="file" name="profile_image" id="profileImage">
+                        <input class="form-control" type="file" name="profile_img" id="profileImage">
                         </div>
 {#                      <div class="row">#}
                         <div class="col mb-3">
-                        <img id="previewProfileImage" height="186px" width="182px"  {% if college_info.profile_image %}src="{{ college_info.profile_image.url }}" {% endif %} class="img-rounded" alt="College Logo">
+                        <img id="previewProfileImage" height="186px" width="182px"  {% if college_info.profile_img %}src="{{ college_info.profile_img.url }}" {% endif %} class="img-rounded" alt="College Logo">
                         </div>
                         <script>
                             function readNewImage(input)

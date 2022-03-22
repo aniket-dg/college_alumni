@@ -17,6 +17,23 @@ class UserFilter(django_filters.FilterSet):
     passout_year = django_filters.CharFilter(field_name='education__passout_year', lookup_expr='iexact')
     company = django_filters.CharFilter(field_name='education__current_company__name')
     phone_number = django_filters.CharFilter(field_name='phone_number', lookup_expr='iexact')
+    user_type = django_filters.CharFilter(method='check_usertype')
+
+    def check_usertype(self, queryset, value, *args, **kwargs):
+        try:
+            value = args[0]
+            if not value:
+                return queryset
+            if value == "student":
+                return queryset.filter(user_type ='student')
+            elif value == "college":
+                return queryset.filter(user_type='college')
+            elif value == "industry":
+                return queryset.filter(user_type='industry')
+            return queryset
+        except:
+            return queryset
+
     def status_check(self, queryset, value, *args, **kwargs):
         try:
             value = args[0]

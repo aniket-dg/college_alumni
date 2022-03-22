@@ -97,8 +97,10 @@
 														<form method="post">
 															<textarea placeholder="Post your comment" id="comment${post.post_id}" name="comment${post.post_id}"></textarea>
 															<div class="add-smiles">
-																<button  id="comment-submit-btn-${post.post_id}" type="button" onclick="postComment('${post.post_id}')"  title="add icon"><span class="em em-expressionless"></span></button>
 															</div>
+																<button  id="comment-submit-btn-${post.post_id}" type="button" onclick="postComment('${post.post_id}')"  title="add icon" style="color:blue"><span class="ti-share" style="
+    font-size: 28px;
+"></span>&nbsp;<br><span></span></button><br>
 															<div class="smiles-bunch">
 																<i class="em em---1"></i>
 																<i class="em em-smiley"></i>
@@ -218,10 +220,14 @@
 
 
 
-    function morePost()
+    function morePost(user_id='')
     {
         console.log("More function called");
-        let user_id = "{{ profile_user.id }}";
+        if((user_id.length === 0) || user_id === undefined)
+            {
+                user_id = 0;
+            }
+        {#let user_id = "{{ profile_user.id }}";#}
         currentPosts = $('.central-meta').length-1;
         $.ajax({
             async: true,
@@ -438,13 +444,6 @@ function moreComments(post_id, type='post')
 
 
 
-<script>
-    $(document).ready(function () {
-        morePost();
 
-    });
-
-
-</script>
 
 </html>

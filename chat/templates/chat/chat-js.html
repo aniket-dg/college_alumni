@@ -26,12 +26,6 @@
 
     {######  End  Variable used for personal notification and seperation of receiver #######}
 
-
-
-
-
-
-
     {#######################    Custom Api calls      ##########################    #}
     function deleteSelectedChat()
     {
@@ -894,7 +888,7 @@ function getMessageById(data) {
         function sendFriendRequest(e, reload=false){
             e.preventDefault()
             const formData = new FormData(e.target)
-            fetch("{% url 'user:send-request' %}", {
+            fetch("{% url 'send-request' %}", {
                 method: 'POST',
                 body: formData
             }).then(response => {
@@ -909,7 +903,7 @@ function getMessageById(data) {
         function acceptFriendRequest(e, reload=false){
             e.preventDefault()
             const formData = new FormData(e.target)
-            fetch("{% url 'user:accept-user' %}", {
+            fetch("{% url 'accept-user' %}", {
                 method: 'POST',
                 body: formData
             }).then(response => {

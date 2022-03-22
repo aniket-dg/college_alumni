@@ -225,7 +225,7 @@
                             <div class="alert alert-danger" id="error_tag" style="display: none" role="alert">
 
                             </div>
-										<form method="post" id="educationForm" action="{% url 'user:user-education' %}">
+										<form method="post" id="educationForm" action="{% url 'user-education' %}">
                                         {% csrf_token %}
 											<div class="form-group">
 											  <select name="college" required="required" id="college_id">

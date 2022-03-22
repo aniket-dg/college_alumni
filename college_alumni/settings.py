@@ -110,3 +110,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FAST_SMS_API = "jOuMb6YyyCojQDHuKjRNMUNUOpiM2mnuezcE7Goo8499sYSn2f0YFOaJAGVD"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'mahasig.mh@gmail.com'
+EMAIL_HOST_PASSWORD = "Test@321"

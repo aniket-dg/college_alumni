@@ -76,7 +76,7 @@
                                                         </div>
 
                                                         <div id="accordion-profile-body-1" class="accordion-collapse collapse" aria-labelledby="accordion-profile-1" data-parent="#accordion-profile">
-                                                            <form class="accordion-body" method="post" action="{% url 'user:update' request.user.id %}">
+                                                            <form class="accordion-body" method="post" action="{% url 'update' request.user.id %}">
 
                                                                     {% csrf_token %}
                                                                 <div class="form-floating mb-6">
@@ -181,7 +181,7 @@
 
                                                         <div id="accordion-security-body-1" class="accordion-collapse collapse" aria-labelledby="accordion-security-1" data-parent="#accordion-security">
                                                             <div class="accordion-body">
-                                                                <form action="{% url 'user:password_change' %}" autocomplete="off" method="post">
+                                                                <form action="{% url 'password_change' %}" autocomplete="off" method="post">
                                                                     {% csrf_token %}
                                                                     <div class="form-floating mb-6">
                                                                         <input type="password" class="form-control" name="old_password" id="profile-current-password" placeholder="Current Password" autocomplete="">

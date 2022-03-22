@@ -1,0 +1,161 @@
+{% extends 'analytics/base.html' %}
+{% load static %}
+{% block content %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.2.7/pdfobject.min.js" integrity="sha512-g16L6hyoieygYYZrtuzScNFXrrbJo/lj9+1AYsw+0CYYYZ6lx5J3x9Yyzsm+D37/7jMIGh0fDqdvyYkNWbuYuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+ <div class="content-wrapper">
+            <!-- Content -->
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div class="row">
+
+           <div class="col-12 col-lg-12 order-2 order-md-3 order-lg-2 mb-4">
+           {% if messages %}
+                  {% for item in messages %}
+                      {% if item.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                    {% else %}
+                      <div class="alert alert-{{ item.tags }}" role="alert">
+                    {% endif %}
+                          {{ item }}
+                    </div>
+                  {% endfor %}
+              {% endif %}
+                  <div class="card">
+                    <div class="row row-bordered g-0">
+
+                      <div class="col-md-8">
+                        <h5 class="card-header m-0 me-2 pb-3">User Details</h5>
+
+                        <div class="px-2">
+
+                            <div class="row border-bottom py-3 mx-3">
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Name</strong>: &nbsp;{{ object.get_full_name }}</span>
+                                </div>
+{#                                <div class="col-md-6 mb-lg-0 mb-2">#}
+{#                                    <span><strong>Email:</strong> &nbsp;{{ object.email }}</span>#}
+{#                                </div>#}
+                            </div>
+{#                            <div class="row border-bottom py-3 mx-3">#}
+{#                                <div class="col-md-6 mb-lg-0 mb-2">#}
+{#                                    <span><strong>Date of Birth</strong>: &nbsp;{{ user_basic.dob|date:"d M, Y" }}</span>#}
+{#                                </div>#}
+{#                                <div class="col-md-6 mb-lg-0 mb-2">#}
+{#                                    <span><strong>Phone Number:</strong> &nbsp;{{ object.phone_number }}</span>#}
+{#                                </div>#}
+{#                            </div>#}
+
+                            <div class="row border-bottom py-3 mx-3">
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Branch</strong>: &nbsp;{{ user_education.branch }}</span>
+                                </div>
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>City:</strong> &nbsp;{{ user_basic.city }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row border-bottom py-3 mx-3">
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Admission Year</strong>: &nbsp;{{ user_education.admission_year }}</span>
+                                </div>
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Passout Year</strong> &nbsp;{{ user_education.passout_year }}</span>
+                                </div>
+                            </div>
+                            {% if user_basic.about_me %}
+                            <div class="row border-bottom py-3 mx-3">
+                                <div class="col-md-12 mb-lg-0 mb-2">
+                                    <span><strong>About Me</strong>: &nbsp;{{ user_basic.about_me }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if user_education.current_status %}
+                            <div class="row border-bottom py-3 mx-3">
+                                <div class="col-md-12 mb-lg-0 mb-2">
+                                    <span><strong>Current Status</strong>: &nbsp;{{ user_education.current_status }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if user_education.current_city or user_education.current_city %}
+                            <div class="row border-bottom py-3 mx-3">
+                                {% if user_education.current_city %}
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Current City</strong>: &nbsp;{{ user_education.current_city }}</span>
+                                </div>
+                                    {% endif %}
+                                {% if user_education.current_city %}
+                                <div class="col-md-6 mb-lg-0 mb-2">
+                                    <span><strong>Current Company</strong>: &nbsp;{{ user_education.current_company.name }}</span>
+                                </div>
+                                    {% endif %}
+                            </div>
+                        {% endif %}
+                        {% if object.is_declined %}
+                            <div class="row border-bottom py-3 mx-3 mb-3">
+                                <div class="col-md-12 mb-lg-0 mb-2">
+                                    <span><strong>Reason for Decline User</strong>: &nbsp;{{ object.reason_for_declined }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="card-body">
+                          <div class="text-center">
+                            <div class="dropdown">
+{#                              <button#}
+{#                                class="btn btn-sm btn-outline-primary dropdown-toggle"#}
+{#                                type="button"#}
+{#                                id="growthReportId"#}
+{#                                aria-haspopup="true"#}
+{#                                aria-expanded="false"#}
+{#                                data-bs-toggle="modal"#}
+{#                          data-bs-target="#modalToggle"#}
+{#                              >#}
+{#                                View Uploaded Document#}
+{#                              </button>#}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="text-center fw-semibold pt-3 mb-2">Status:
+                            {% if object.is_verified %}
+                            <strong class="text-success">Active</strong>
+                            {% elif not object.is_verified and object.is_declined %}
+                                <strong class="text-danger">Disapproved</strong>
+                            {% else %}
+                                <strong class="text-info">Inactive</strong>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-center fw-semibold pt-3 mb-2"><img src="{{ object.get_profile_img }}"></div>
+                        <div class="text-center fw-semibold pt-3 mb-2"><strong>{{ object.username }}</strong></div>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+            <div class="content-backdrop fade"></div>
+
+
+{# #######################################}
+               <div
+                          class="modal fade"
+                          id="modalToggle"
+                          aria-labelledby="modalToggleLabel"
+                          tabindex="-1"
+                          style="display: none"
+                          aria-hidden="true"
+                        >
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" id="pdfContainer">
+                                <iframe src="{{ object.get_uploaded_document }}" width="2200" height="800"></iframe>
+                            </div>
+                          </div>
+                        </div>
+{# #######################################}
+
+              {# #######################################}
+
+{# #######################################}
+{% endblock %}

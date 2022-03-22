@@ -1,123 +1,152 @@
 {% extends 'analytics/base.html' %}
 {% load static %}
-
 {% block content %}
  <div class="content-wrapper">
             <!-- Content -->
-
             <div class="container-xxl flex-grow-1 container-p-y">
-              <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light"></span> Unapproved Users</h4>
+            <h4 class="fw-bold py-3 mb-4">
+                <span class="text-muted fw-light">Home /</span> Search Filter
+              </h4>
+              <div class="row">
+            <div class="col-md-12">
+                  <div class="card mb-4">
+                    <h5 class="card-header">Search Filter</h5>
+                  <form method="get" action="{% url 'analytics:search' %}" name="searchForm" id="searchForm">
+                    <div class="card-body">
+                      <span class="text-info"><strong>Note: </strong>All fields are not necessary to filter result</span><br>
+                     <div class="row">
+                     <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" id="exampleFormControlInput1" placeholder="Search using name of user........">
+                      </div>
 
-              <div class="card">
-                <h5 class="card-header">Unapproved Alumni Student &nbsp;&nbsp;&nbsp;</h5>
-                <div class="table-responsive text-nowrap">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>College Code</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="table-border-bottom-0">
-                      <tr>
-                        <td><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>Arjun Pavar</strong></td>
-                        <td>@arjun</td>
-                        <td>DTE2005
-                        </td>
-                        <td><span class="badge bg-label-primary me-1">Active</span></td>
-                        <td>
-                                                       <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>
-                              <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-trash me-1"></i> Delete</a>
-                        </td>
-                      </tr>
-                        <tr><td>
-                            <button class="btn btn-primary float-lg">View All</button>
-                        </td></tr>
+                     <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">Last Name</label>
+                        <input class="form-control" type="text" name="last_name" id="exampleFormControlReadOnlyInput1" placeholder="Search using last name of user........">
+                      </div>
 
-                    </tbody>
-                  </table>
+
+                     </div>
+
+                     <div class="row">
+                         <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">Email</label>
+                        <input class="form-control" type="email" name="email" id="exampleFormControlReadOnlyInput1" placeholder="mahasig_student@gmail.com">
+                      </div>
+                     <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Birth Year</label>
+                        <input class="form-control" type="number" name="birth_year" id="exampleFormControlReadOnlyInput1" placeholder="2001">
+
+                      </div>
+
+
+                     </div>
+                     <div class="row">
+                         <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">Username</label>
+                        <input class="form-control" type="text" name="username" id="exampleFormControlReadOnlyInput1" placeholder="mahasig_user">
+                      </div>
+                      <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInputPlain1" class="form-label">Phone Number</label>
+                        <input class="form-control" type="number" id="exampleFormControlReadOnlyInput1" name="phone_number">
+                      </div>
+
+                         <div class="row">
+                             <div class="col mb-3">
+                        <label for="exampleFormControlSelect1" class="form-label">Account Status</label>
+                        <select class="form-select" name="status" id="exampleFormControlSelect1" aria-label="Default select example">
+                          <option selected="" value="">Select account is active, freeze or decline</option>
+                          <option value="active">Approved</option>
+                          <option value="unapproved">Unapproved</option>
+                          <option value="decline">Declined</option>
+                        </select>
+                      </div>
+                          <div class="col mb-3">
+                        <label for="exampleDataList" class="form-label">Branch</label>
+                        <input class="form-control" name="branch" list="datalistOptions" id="exampleDataList" placeholder="Type to search...">
+                        <datalist id="datalistOptions">
+                          {% for item in branches %}
+                            <option value="{{ item.name }}">{{ item.name }}</option>
+                          {% endfor %}
+                        </datalist>
+                      </div>
+
+                      <div class="col mb-3">
+
+                      </div>
+                        </div>
+
+                     <div class="row">
+                     <div class="col mb-3">
+                        <label for="exampleFormControlInput1" class="form-label">Admission Year</label>
+                       <input class="form-control" type="number" name="admission_year" id="exampleFormControlReadOnlyInput1" placeholder="2020">
+
+                      </div>
+
+                      <div class="col mb-3">
+                        <label for="exampleFormControlReadOnlyInput1" class="form-label">Passout Year</label>
+                         <input class="form-control" type="number" name="passout_year" id="exampleFormControlReadOnlyInput1" placeholder="2023">
+                      </div>
+                     </div>
+
+                    </div>
+
+                        <div class="row">
+                          <div class="col mb-3">
+                        <label for="exampleDataList" class="form-label">Current Company</label>
+                        <input class="form-control" list="companyListOptions" id="exampleDataList" placeholder="Student currently working in......">
+                        <datalist id="companyListOptions">
+                          {% for item in companies %}
+                            <option value="{{ item.name }}">{{ item.name }}</option>
+                          {% endfor %}
+                        </datalist>
+                      </div>
+
+                         <div class="col mb-3">
+                        <label for="exampleDataList" class="form-label">College</label>
+                        <input class="form-control" list="collegeListOptions" id="exampleDataList" placeholder="College......">
+                        <datalist id="collegeListOptions">
+                          {% for item in colleges %}
+                            <option value="{{ item.name }}">{{ item.name }}</option>
+                          {% endfor %}
+                        </datalist>
+                      </div>
+
+                        </div>
+                    <div>
+                        <div class="col mb-3">
+                                <div class="col-md">
+                          <label for="exampleDataList" class="form-label">User Type</label><br>
+                          <div class="form-check form-check-inline mt-3">
+                            <input class="form-check-input" type="radio" name="user_type" id="inlineRadio1" value="all">
+                            <label class="form-check-label" for="inlineRadio1">All</label>
+                          </div>
+                          <div class="form-check form-check-inline mt-3">
+                            <input class="form-check-input" type="radio" name="user_type" id="inlineRadio1" checked value="student">
+                            <label class="form-check-label" for="inlineRadio1">Alumni Student</label>
+                          </div>
+                          <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="user_type" id="inlineRadio2" value="college">
+                            <label class="form-check-label" for="inlineRadio2">College User</label>
+                          </div>
+                          <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="user_type" id="inlineRadio3" value="industry">
+                            <label class="form-check-label" for="inlineRadio3">Industry</label>
+                          </div>
+                        </div>
+                            </div>
+                    </div>
+                        <button type="submit" onclick="$('#searchForm').submit()" class="btn btn-primary">Search</button>
+                  </div>
+                  </form>
                 </div>
-              </div>
+        </div>
 
-              <hr class="my-5" />
-
-
-                <div class="card">
-                <h5 class="card-header">Unapproved College User</h5>
-                <div class="table-responsive text-nowrap">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>College Code</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="table-border-bottom-0">
-                      <tr>
-                        <td><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>Arjun Pavar</strong></td>
-                        <td>@arjun</td>
-                        <td>DTE2005
-                        </td>
-                        <td><span class="badge bg-label-primary me-1">Active</span></td>
-                        <td>
-                                                       <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>
-                              <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-trash me-1"></i> Delete</a>
-                        </td>
-                      </tr>
-
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <hr class="my-5" />
-
-                <div class="card">
-                <h5 class="card-header">Unapproved Industry User</h5>
-                <div class="table-responsive text-nowrap">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>College Code</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="table-border-bottom-0">
-                      <tr>
-                        <td><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>Arjun Pavar</strong></td>
-                        <td>@arjun</td>
-                        <td>DTE2005
-                        </td>
-                        <td><span class="badge bg-label-primary me-1">Active</span></td>
-                        <td>
-                                                       <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-edit-alt me-1"></i> Approve</a>
-                              <a class="dropdown-item" href="javascript:void(0);"
-                                ><i class="bx bx-trash me-1"></i> Delete</a>
-                        </td>
-                      </tr>
-
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <hr class="my-5" />
 
             </div>
 
             <div class="content-backdrop fade"></div>
+                <script>
+                    $('#dashboard_list').addClass('active');
+                </script>
 {% endblock %}
