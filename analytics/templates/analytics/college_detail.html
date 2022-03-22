@@ -97,7 +97,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="text-center fw-semibold pt-3 mb-2"><img alt="College Logo" {% if college.profile_img %}src="{{ college.profile_img.url }}" {% endif %} style="height: 186px" width="182px"></div>
+                        <div class="text-center fw-semibold pt-3 mb-2"><img alt="College Logo" {% if college.get_profile_img %}src="{{ college.get_profile_img }}" {% endif %} style="height: 186px" width="182px"></div>
                         <div class="text-center fw-semibold pt-3 mb-2"><strong>{{ object.username }}</strong></div>
 
                         <div class="d-flex px-xxl-4 px-lg-2 p-4 gap-xxl-3 gap-lg-1 gap-3 justify-content-between">
@@ -133,10 +133,13 @@
                         >
                           <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content" id="pdfContainer">
-                                <iframe src="{{ object.get_uploaded_document }}" width="2200" height="800"></iframe>
+                            <iframe src="{{ object.get_uploaded_document }}" width="650" height="850"></iframe>
                             </div>
                           </div>
                         </div>
+
+
+
 {# #######################################}
 
               {# #######################################}

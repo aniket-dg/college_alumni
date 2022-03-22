@@ -60,7 +60,7 @@
                                         <form method="post" action="{% url 'college-basic-info' request.user.get_college_obj.id  %}">
                                             {% csrf_token %}
 											<div class="form-group">
-											  <input type="text" id="input" name="name" value="{{ request.user.get_college_obj.name }}" required="required"/>
+											  <input type="text" id="input" name="name" {% if request.user.get_college_obj.name %} value="{{ request.user.get_college_obj.name }}" {% endif %} required="required"/>
 											  <label class="control-label" for="input">College Name</label><i class="mtrl-select"></i>
                                                 {% if form.errors.name %}
                                                 <div class="alert alert-danger" role="alert">
@@ -70,7 +70,7 @@
 											</div>
 
 											<div class="form-group">
-											  <input type="text" required="required" name="email" value="{{ user.email }}"/>
+											  <input type="text" required="required" name="email" {% if user.email %} value="{{ user.email }}" {% endif %}/>
 											  <label class="control-label" for="input"><a class="__cf_email__" data-cfemail="4b0e262a22270b">[email&#160;protected] readonly can't be change</a></label><i class="mtrl-select"></i>
 											{% if user_instance_error.errors.email %}
                                                 <div class="alert alert-danger" role="alert">
@@ -79,7 +79,7 @@
                                                 {% endif %}
                                             </div>
 											<div class="form-group">
-											  <input type="text" required="required" name="phone_number" value="{{ request.user.get_college_obj.phone_number }}"/>
+											  <input type="text" required="required" name="phone_number" {% if request.user.get_college_obj.phone_number %} value="{{ request.user.get_college_obj.phone_number }}" {% endif %}/>
 											  <label class="control-label" for="input">Phone No.</label><i class="mtrl-select"></i>
 											    {% if form.errors.phone_number %}
                                                 <div class="alert alert-danger" role="alert">
@@ -89,7 +89,7 @@
                                             </div>
 
                                             <div class="form-group">
-											  <input type="text" id="dob_id" required="required" name="website" value="{{ request.user.get_college_obj.website }}"/>
+											  <input type="text" id="dob_id" required="required" name="website" {% if request.user.get_college_obj.website %}value="{{ request.user.get_college_obj.website }} {% endif %}"/>
 											  <label class="control-label" for="input">Website</label><i class="mtrl-select"></i>
 											    {% if form.errors.website %}
                                                 <div class="alert alert-danger" role="alert">

@@ -55,8 +55,8 @@ class IsUserActive:
         if request.user.is_verified:
             return super().dispatch(request, *args, **kwargs)
         else:
-            if request.user.is_basic_info and request.user.is_work_education and request.user.is_interest:
-                messages.error(request, "Your account is not verified yet!")
+            messages.error(request, "Your account is not verified yet! Once verified, you will get notification on "
+                                    "you registered mobile number")
             return redirect('profile')
 
 
@@ -160,13 +160,14 @@ class SignUpView(SuccessMessageMixin, CreateView):
 
         if user_type == "college":
             user.user_type = "college"
-            user.college_code = college_code
-            user.save()
+
             email = user.email
             domain = email.split("@")[1]
             if domain not in college.domain:
                 messages.warning(self.request, "Enter verifiable institute-issued email address")
                 return redirect('register')
+            user.college_code = college_code
+            user.save()
         else:
             user.user_type = "student"
         # user.is_active = False
@@ -608,6 +609,11 @@ class CollegeBasicInfo(LoginRequiredMixin, UserPassesTestMixin,UpdateView):
             return redirect(redirect_url)
         return redirect('profile')
 
+    def form_invalid(self, form):
+        context = {}
+        context['form'] = form
+        return render(self.request, 'users/basic_info.html', context)
+
     def test_func(self):
         return self.get_object() == self.request.user.get_college_obj()
 
@@ -865,7 +871,10 @@ class EmailVerificationView(View):
             if user.user_type == "college":
                 college = College.objects.filter(code=user.college_code).last()
                 if college:
-                    CollegeName.objects.create(name=college.name)
+                    a = CollegeName(name=college.name)
+                    a.college_users = user
+                    a.save()
+
             if user.user_type == "industry":
                 industry = Company()
                 industry.save()

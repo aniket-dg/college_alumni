@@ -41,7 +41,7 @@ class CollegeName(models.Model):
     name = models.CharField(max_length=300)
     branches = models.ManyToManyField(BranchName, blank=True)
     about_us = models.TextField(null=True, blank=True)
-    profile_image = models.ImageField(upload_to='college_logo', null=True, blank=True)
+    profile_image = models.ImageField(upload_to='college_logo', default='profile_image/default_profile_image.png')
     website = models.URLField(null=True, blank=True)
     college_users = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, blank=True)
     cover_image = models.ImageField(upload_to='cover_photo/', default='cover_photo/default_cover_photo.jpg')
@@ -200,10 +200,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.first_name
 
     def get_user_connected_users(self):
+        emails1 = []
         if self.is_superuser:
-            return User.objects.all().exclude(email=self.email)
+            emails1 = [user.email for user in User.objects.all().exclude(email=self.email)]
         if self.is_college_user() or self.is_industry_user():
-            return User.objects.filter(user_type='student').exclude(email=self.email)
+            emails1 = [user.email for user in User.objects.filter(user_type='student').exclude(email=self.email)]
+
 
         emails = [user.connection_user.email for user in self.connections.filter(send_request="Accepted")]
         pending_emails = [user.connection_user.email for user in
@@ -212,7 +214,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                                                                   Q(user_type='industry') |
                                                                   Q(is_superuser=True), is_verified=True
                                                                   )]
-        emails = emails + pending_emails + extra_email
+        emails = emails1 + emails + pending_emails + extra_email
         emails = list(set(emails))
         users = User.objects.exclude(email=self.email).filter(email__in=emails)
         return users

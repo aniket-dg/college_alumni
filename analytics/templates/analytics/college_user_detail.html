@@ -132,7 +132,7 @@
                         <div class="d-flex px-xxl-4 px-lg-2 p-4 gap-xxl-3 gap-lg-1 gap-3 justify-content-between">
                           <div class="d-flex">
 
-                              <a href="{% url 'college:approve-user' object.id %}" class="btn btn-success" type="button">
+                              <a href="{% url 'analytics:approve-user' object.id %}" class="btn btn-success" type="button">
                                 Approve
                               </a>
                           </div>
@@ -162,7 +162,7 @@
                         >
                           <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content" id="pdfContainer">
-                                <iframe src="{{ object.get_uploaded_document }}" width="2200" height="800"></iframe>
+                                <iframe src="{{ object.get_uploaded_document }}" width="650" height="850"></iframe>
                             </div>
                           </div>
                         </div>

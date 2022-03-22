@@ -13,7 +13,7 @@ class EmailForm(forms.Form):
 class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('email', 'username','first_name', 'last_name','phone_number', 'password1', 'password2', 'uploaded_document')
+        fields = ('email', 'college_code','username','first_name', 'last_name','phone_number', 'password1', 'password2', 'uploaded_document')
 
     def __init__(self, *args, **kwargs):
         super(RegistrationForm, self).__init__(*args, **kwargs)
