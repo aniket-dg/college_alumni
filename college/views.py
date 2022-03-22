@@ -23,6 +23,13 @@ from users.models import BranchName, User, UserEducation, CollegeName, UserBasic
 from users.views import make_friends
 
 
+def handler404(request, *args, **kwargs):
+    return render(request, 'post/error.html')
+
+
+def handler500(request, *args, **kwargs):
+    return render(request, 'post/error.html')
+
 class IsCollegeUser:
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_college_user():
