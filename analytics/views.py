@@ -99,10 +99,10 @@ class CollegeUserDetailView(LoginRequiredMixin, IsSuperAdmin, UserPassesTestMixi
 class CollegeListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/college_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
-        queryset = User.objects.filter(user_type='college', is_verified=True, is_active=True)
+        queryset = User.objects.filter(user_type='college', is_verified=True, is_active=True, is_superuser=False)
         return queryset
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -115,10 +115,10 @@ class CollegeListView(LoginRequiredMixin, IsSuperAdmin, ListView):
 class UnApproveCollegeListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/college_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
-        queryset = User.objects.filter(user_type='college', is_verified=False, is_active=True)
+        queryset = User.objects.filter(user_type='college', is_verified=False, is_active=True, is_superuser=False)
         return queryset
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -131,10 +131,10 @@ class UnApproveCollegeListView(LoginRequiredMixin, IsSuperAdmin, ListView):
 class StudentListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/student_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
-        queryset = User.objects.filter(user_type='student', is_verified=True, is_active=True)
+        queryset = User.objects.filter(user_type='student', is_verified=True, is_active=True, is_superuser=False)
         return queryset
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -146,7 +146,7 @@ class StudentListView(LoginRequiredMixin, IsSuperAdmin, ListView):
 class UnApproveStudentListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/student_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = User.objects.filter(user_type='student', is_verified=False, is_active=True)
@@ -161,7 +161,7 @@ class UnApproveStudentListView(LoginRequiredMixin, IsSuperAdmin, ListView):
 class IndustryListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/industry_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = User.objects.filter(user_type='industry', is_verified=True, is_active=True)
@@ -177,7 +177,7 @@ class IndustryListView(LoginRequiredMixin, IsSuperAdmin, ListView):
 class UnApproveIndustryListView(LoginRequiredMixin, IsSuperAdmin, ListView):
     model = User
     template_name = 'analytics/industry_list.html'
-    paginate_by = 1
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = User.objects.filter(user_type='industry', is_verified=False, is_active=True)

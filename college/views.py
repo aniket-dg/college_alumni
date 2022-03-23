@@ -87,14 +87,14 @@ class CollegeInfoView(LoginRequiredMixin, IsCollegeUser, UpdateView):
 class CollegeApproveUserList(LoginRequiredMixin, IsCollegeUser, ListView):
     model = User
     template_name = 'college/college_user_list.html'
-    paginate_by = 2
+    paginate_by = 20
 
     def get_queryset(self):
         college = self.request.user.get_college_obj()
         queryset = User.objects.filter(education__college=college, is_active=True,
                                        is_verified=False,
                                        user_type='student',
-                                       is_declined=False)
+                                       is_declined=False, is_superuser=False)
         # print(college_user)
         # queryset = get_college_user(self.request)
         return queryset
@@ -119,7 +119,7 @@ class CollegeUserList(LoginRequiredMixin, IsCollegeUser, ListView):
         queryset = User.objects.filter(education__college=college, is_active=True,
                                        is_verified=True,
                                        user_type='student',
-                                       is_declined=False
+                                       is_declined=False,is_superuser=False
                                        )
         # print(college_user)
         # queryset = get_college_user(self.request)
@@ -244,7 +244,7 @@ class SearchResult(LoginRequiredMixin, IsCollegeUser, ListView):
     model = User
     template_name = 'college/search_result.html'
 
-    # paginate_by = 1
+    # paginate_by = 10
 
     def get_queryset(self):
         college = self.request.user.get_college_obj()

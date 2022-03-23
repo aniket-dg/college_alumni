@@ -48,7 +48,7 @@ class SearchResult(LoginRequiredMixin, IsIndustryUser, ListView):
     model = User
     template_name = 'industry/search_result.html'
 
-    # paginate_by = 1
+    # paginate_by = 10
 
     def get_queryset(self):
         college = self.request.user.get_college_obj()
@@ -132,7 +132,7 @@ class IndustryUserList(LoginRequiredMixin, IsIndustryUser, ListView):
         queryset = User.objects.filter(is_active=True,
                                        is_verified=True,
                                        user_type='student',
-                                       is_declined=False
+                                       is_declined=False, is_superuser=False
                                        )
         # print(college_user)
         # queryset = get_college_user(self.request)
