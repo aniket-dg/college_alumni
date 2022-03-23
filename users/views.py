@@ -194,7 +194,7 @@ class LoginView(SuccessMessageMixin, FormView):
         if self.request.user.is_authenticated:
             if self.request.GET.get('next'):
                 return redirect(self.request.GET.get('next'))
-            return redirect('post:post')
+            return redirect('profile')
         context = {}
         context['form'] = self.get_form()
         return render(self.request, 'users/login.html', context)
@@ -218,7 +218,7 @@ class LoginView(SuccessMessageMixin, FormView):
                     return redirect(url_redirect)
                 if self.request.GET.get('next'):
                     return redirect(self.request.GET.get('next'))
-                return redirect('post:post')
+                return redirect('profile')
             else:
                 messages.warning(self.request,
                                  'Your account is not active, check your mail for activation link or contact support!')
